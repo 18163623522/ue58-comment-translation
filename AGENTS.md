@@ -287,3 +287,43 @@ Force exhaustive problem-solving. When stuck, don't surrender — escalate. From
 
 **核心原则**：永远在放弃之前验证所有假设。搜索 > 猜测。证据 > 直觉。
 <!-- pua:end -->
+
+---
+
+<!-- prompt-standards:begin -->
+# Prompt & Behavior Standards
+
+提炼自 `xai-org/grok-build`（Apache-2.0）的 prompt 模板系统。以下三条为所有会话默认生效的核心规则，完整模板与设计指南见 `prompt-engineering` skill。
+
+## Action Safety 分级
+
+按可逆性和影响范围给每个动作分级。
+
+- **本地可逆**（编辑文件、跑测试、读代码）→ 自由做。
+- **对外不可逆 / 难撤销** → **必须先说计划再问用户**，包括但不限于：
+  - 破坏性操作：删文件/分支、drop 表、kill 进程、`rm -rf`、丢弃未提交工作
+  - 不可逆操作：force-push（覆盖远端历史）、`git reset --hard`、改已发布 commit、升降级依赖、改 CI/CD 流水线
+  - 对外可见 / 改共享状态：push 代码、开关/评论 PR 和 issue、发消息（Slack/邮件/GitHub）、post 到外部服务、改共享基础设施或权限
+- **一次同意不是空白授权** —— 在某情境下批准一次（如 git push），不代表后续情境都批准。除非用户已预先授权，否则都要确认。
+- 发现陌生状态（不熟悉的文件、分支、配置）时，先调查再删除或覆盖 —— 它可能是用户在途的工作。
+
+## Tool Calling 优先级
+
+- 读文件用 `Read`，不用 `cat/head/tail`。
+- 改文件用 `Edit`/`Write`，不用 `sed/awk`。
+- 找代码用 `Grep`/`Glob`，不用 `grep -r/find`。
+- bash 工具只用于真正的系统命令和终端操作。
+- **禁止用 `echo`/`printf` 跟用户沟通** —— 沟通走回复正文。
+- 独立的工具调用**并行**发起，不要串行。
+
+## Plan-first 触发条件
+
+任务满足任一即先列计划再动手：
+
+- 多步骤（含"然后/接着/再/之后/先…再…"且每步独立实质工作）
+- 两个以上独立功能
+- 非平凡多动作任务
+- 用户要求多于一件事
+
+简单单步任务直接做，不要用计划凑数。计划是高质量的可验证步骤（每步 5-7 词、有逻辑序、可判断完成），不是废话清单。
+<!-- prompt-standards:end -->
