@@ -1,0 +1,15 @@
+# 克隆的分析用仓库（自带 .git，避免子模块干扰）
+/grok-build-analysis/.git/
+/grok-build-analysis/target/
+
+# ZCode 运行时产物
+/.Codex/
+/.zcode/
+
+# 通用缓存与临时
+*.log
+*.tmp
+__pycache__/
+node_modules/
+.DS_Store
+Thumbs.db
