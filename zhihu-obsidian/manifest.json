@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "知乎 → Obsidian",
+  "version": "0.1.0",
+  "description": "一键把知乎文章保存到 Obsidian，正文、图片、视频、代码块连同附件一起入库。",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://*.zhihu.com/*",
+    "https://*.zhimg.com/*",
+    "http://127.0.0.1:27123/*",
+    "http://localhost:27123/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://zhuanlan.zhihu.com/p/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/parser.js"],
+      "matches": ["https://zhuanlan.zhihu.com/*"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "保存到 Obsidian"
+  },
+  "options_page": "options.html"
+}
