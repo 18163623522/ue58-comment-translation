@@ -3,12 +3,13 @@
   "name": "知乎 → Obsidian",
   "version": "0.1.0",
   "description": "一键把知乎文章保存到 Obsidian，正文、图片、视频、代码块连同附件一起入库。",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "webRequest", "nativeMessaging"],
   "host_permissions": [
     "https://*.zhihu.com/*",
     "https://*.zhimg.com/*",
     "http://127.0.0.1:27123/*",
-    "http://localhost:27123/*"
+    "http://localhost:27123/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "background.js",
