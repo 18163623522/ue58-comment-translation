@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <h1>知乎 → Obsidian 设置</h1>
+  <form id="form">
+    <label>
+      API 地址
+      <input type="text" name="apiBase" placeholder="http://127.0.0.1:27123" />
+    </label>
+    <label>
+      API Key（Local REST API 插件设置里获取）
+      <input type="password" name="apiKey" placeholder="粘贴 API Key" />
+    </label>
+    <label>
+      目标文件夹（库内相对路径）
+      <input type="text" name="targetFolder" placeholder="知乎" />
+    </label>
+    <label>
+      附件文件夹后缀
+      <input type="text" name="assetsSuffix" placeholder=".assets" />
+    </label>
+    <label class="checkbox">
+      <input type="checkbox" name="downloadVideo" />
+      尝试下载视频本体（失败时保存封面图 + 链接）
+    </label>
+    <button type="submit">保存</button>
+    <p id="saved" hidden>已保存 ✓</p>
+  </form>
+  <p class="hint">
+    提示：Local REST API 默认启用 HTTPS 自签证书，浏览器扩展访问会报证书错误。
+    请在 Obsidian 的 Local REST API 插件设置里关闭 HTTPS（改用 HTTP），
+    或信任其证书，并确保端口与上方 API 地址一致。
+  </p>
+  <script type="module" src="options.js"></script>
+</body>
+</html>
