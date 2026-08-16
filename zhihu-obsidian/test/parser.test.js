@@ -53,8 +53,44 @@ test("toHdImageUrl 已是高清则不重复替换", () => {
   );
 });
 
-test("toHdImageUrl 非 jpg 后缀原样返回", () => {
-  assert.equal(toHdImageUrl("https://x.com/a.png"), "https://x.com/a.png");
+test("toHdImageUrl 支持 webp/gif/png", () => {
+  assert.equal(
+    toHdImageUrl("https://pic1.zhimg.com/v2-abc_r.webp"),
+    "https://pic1.zhimg.com/v2-abc_hd.webp"
+  );
+  assert.equal(
+    toHdImageUrl("https://pic1.zhimg.com/v2-abc_b.gif"),
+    "https://pic1.zhimg.com/v2-abc_hd.gif"
+  );
+  assert.equal(
+    toHdImageUrl("https://pic1.zhimg.com/v2-abc_m.png"),
+    "https://pic1.zhimg.com/v2-abc_hd.png"
+  );
+});
+
+test("toHdImageUrl 支持 _720w/_xl 等现代尺寸后缀", () => {
+  assert.equal(
+    toHdImageUrl("https://picx.zhimg.com/v2-abc_720w.jpg"),
+    "https://picx.zhimg.com/v2-abc_hd.jpg"
+  );
+  assert.equal(
+    toHdImageUrl("https://picx.zhimg.com/v2-abc_xl.jpg"),
+    "https://picx.zhimg.com/v2-abc_hd.jpg"
+  );
+});
+
+test("toHdImageUrl 无尺寸后缀的地址原样返回", () => {
+  assert.equal(
+    toHdImageUrl("https://picx.zhimg.com/v2-abc.jpg"),
+    "https://picx.zhimg.com/v2-abc.jpg"
+  );
+});
+
+test("toHdImageUrl 已带 _hd 保持幂等", () => {
+  assert.equal(
+    toHdImageUrl("https://pic1.zhimg.com/v2-abc_hd.jpg"),
+    "https://pic1.zhimg.com/v2-abc_hd.jpg"
+  );
 });
 
 test("sanitizeFilename 去除非法字符", () => {

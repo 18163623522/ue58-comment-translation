@@ -15,9 +15,14 @@ export function detectLanguage(classList) {
   return "";
 }
 
-// 高清图：把知乎缩略图后缀 _r/_s/_b/_m 等换成 _hd。
+// 原图：把知乎缩略图尺寸后缀统一换成 _hd（zhimg 库确认 _hd 等同于原图 _r）。
+// 覆盖旧式后缀（r/s/b/m/t/l/xl）与现代尺寸后缀（_720w、_1440w、_200x112 等），
+// 以及 jpg/jpeg/png/webp/gif 全部常见扩展名。
 export function toHdImageUrl(url) {
-  return url.replace(/_(?:r|s|b|m|t|l)\.(jpg)$/i, "_hd.jpg");
+  return url.replace(
+    /_(?:r|s|b|m|t|l|xl|720w|1440w|1080w|\d+x\d+)\.(jpg|jpeg|png|webp|gif)(?=\?|$)/i,
+    "_hd.$1"
+  );
 }
 
 // 文件名清洗：去掉 Windows 与 Obsidian 链接语法里的非法字符，限制长度。
