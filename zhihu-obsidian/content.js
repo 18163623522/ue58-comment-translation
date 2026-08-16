@@ -57,10 +57,13 @@
         const v = node.querySelector("video");
         const sources = collectVideoSources(v);
         const poster = node.querySelector("img");
+        // 若候选源里直接含 m3u8，记下来供 background 直接走 ffmpeg。
+        const directM3u8 = sources.find((u) => /\.m3u8(\?|$)/i.test(u)) || "";
         blocks.push({
           type: "video",
           sources,
           src: sources[0] || "",
+          m3u8: directM3u8,
           file: null,
           posterFile: null,
           posterUrl: poster ? toHdImageUrl(imgSrcOf(poster)) : "",

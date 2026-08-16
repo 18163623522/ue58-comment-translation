@@ -5,6 +5,7 @@ const saveBtn = document.getElementById("save");
 const resultEl = document.getElementById("result");
 
 let currentArticle = null;
+let currentTabId = null;
 
 async function activeTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -21,6 +22,7 @@ async function init() {
     statusEl.textContent = "无法获取当前标签页";
     return;
   }
+  currentTabId = tab.id;
   try {
     const ping = await sendToTab(tab, { type: "PING" });
     if (!ping || !ping.isArticle) {
@@ -41,7 +43,7 @@ saveBtn.addEventListener("click", async () => {
   if (!currentArticle) return;
   saveBtn.disabled = true;
   statusEl.textContent = "保存中…";
-  const resp = await chrome.runtime.sendMessage({ type: "SAVE_ARTICLE", article: currentArticle });
+  const resp = await chrome.runtime.sendMessage({ type: "SAVE_ARTICLE", article: currentArticle, tabId: currentTabId });
   if (resp.ok) {
     statusEl.textContent = "已保存";
     resultEl.hidden = false;

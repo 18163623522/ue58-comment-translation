@@ -35,13 +35,16 @@ test("buildFfmpegArgs 无 referer 时不加 headers", () => {
 
 test("buildNativeHostMessage 生成标准消息", () => {
   const msg = buildNativeHostMessage({
-    type: "convert",
     m3u8Url: "https://x.com/a.m3u8",
-    outputPath: "C:/out.mp4",
     referer: "https://www.zhihu.com/",
+    apiBase: "http://127.0.0.1:27123",
+    apiKey: "secret",
+    vaultPath: "知乎/标题.assets/video-1.mp4",
   });
   assert.equal(msg.type, "convert");
   assert.equal(msg.m3u8Url, "https://x.com/a.m3u8");
-  assert.equal(msg.outputPath, "C:/out.mp4");
   assert.equal(msg.referer, "https://www.zhihu.com/");
+  assert.equal(msg.apiBase, "http://127.0.0.1:27123");
+  assert.equal(msg.apiKey, "secret");
+  assert.equal(msg.vaultPath, "知乎/标题.assets/video-1.mp4");
 });

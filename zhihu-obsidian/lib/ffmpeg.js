@@ -12,6 +12,7 @@ export function buildFfmpegArgs({ m3u8Url, outputPath, referer }) {
 }
 
 // 构造发送给本机桥接程序的消息体。
-export function buildNativeHostMessage({ type, m3u8Url, outputPath, referer }) {
-  return { type, m3u8Url, outputPath, referer };
+// 桥接程序负责：ffmpeg 转码 → 读字节 → 上传到 Local REST API 的 vaultPath（相对路径）。
+export function buildNativeHostMessage({ m3u8Url, referer, apiBase, apiKey, vaultPath }) {
+  return { type: "convert", m3u8Url, referer, apiBase, apiKey, vaultPath };
 }
