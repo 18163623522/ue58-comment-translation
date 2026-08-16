@@ -3,6 +3,7 @@ import { sanitizeFilename } from "./lib/parser.js";
 import { buildMarkdown } from "./lib/markdown.js";
 import { createRestClient } from "./lib/rest.js";
 import { downloadMedia, extFromContentType } from "./lib/downloader.js";
+import { selectBestVideoUrl } from "./lib/video.js";
 
 const DEFAULTS = {
   apiBase: "http://127.0.0.1:27123",
@@ -58,6 +59,9 @@ async function handleSave(article) {
         blocks.push({ ...block, file: null });
       }
     } else if (block.type === "video") {
+      // 从多个候选源里选最高清的可下载 mp4。
+      const bestUrl = selectBestVideoUrl(block.sources || [block.src]);
+
       // 先尝试存封面图（若有）
       let posterFile = null;
       if (block.posterUrl) {
@@ -67,13 +71,13 @@ async function handleSave(article) {
         ).catch(() => null);
       }
 
-      if (settings.downloadVideo && block.src) {
+      if (settings.downloadVideo && bestUrl) {
         vidSeq += 1;
         try {
-          const file = await downloadAndPut(client, assetsDir, block.src, `video-${vidSeq}`, referer);
+          const file = await downloadAndPut(client, assetsDir, bestUrl, `video-${vidSeq}`, referer);
           blocks.push({ ...block, file, posterFile: null });
         } catch (e) {
-          failed.push({ kind: "video", url: block.src, error: String(e && e.message) });
+          failed.push({ kind: "video", url: bestUrl, error: String(e && e.message) });
           blocks.push({ ...block, file: null, posterFile });
         }
       } else {

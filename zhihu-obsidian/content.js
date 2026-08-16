@@ -26,6 +26,22 @@
     });
   }
 
+  // 收集 <video> 标签的所有候选源（不同清晰度），供 background 选最高清。
+  function collectVideoSources(videoEl) {
+    const set = new Set();
+    const push = (s) => {
+      if (s && /^https?:\/\//i.test(s)) set.add(s);
+    };
+    if (videoEl) {
+      push(videoEl.getAttribute("data-src"));
+      push(videoEl.getAttribute("data-original"));
+      push(videoEl.getAttribute("src"));
+      push(videoEl.currentSrc);
+      videoEl.querySelectorAll("source").forEach((s) => push(s.getAttribute("src")));
+    }
+    return Array.from(set);
+  }
+
   function parseContent() {
     const container =
       document.querySelector(".Post-RichTextContainer, .Post-RichText, .RichText") ||
@@ -39,11 +55,12 @@
       // 视频卡片：figure 内嵌 video 或 zvideo 容器
       if (tag === "figure" && (node.querySelector("video") || node.querySelector(".zvideo"))) {
         const v = node.querySelector("video");
-        const src = v ? (v.getAttribute("data-src") || v.getAttribute("src") || "") : "";
+        const sources = collectVideoSources(v);
         const poster = node.querySelector("img");
         blocks.push({
           type: "video",
-          src,
+          sources,
+          src: sources[0] || "",
           file: null,
           posterFile: null,
           posterUrl: poster ? toHdImageUrl(imgSrcOf(poster)) : "",
