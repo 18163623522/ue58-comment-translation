@@ -1,0 +1,9 @@
+{
+  "name": "com.zhihu_obsidian.ffmpeg",
+  "description": "知乎到 Obsidian 扩展的 ffmpeg 桥接程序（m3u8 转 mp4）",
+  "path": "BRIDGE_BAT_PATH_PLACEHOLDER",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://EXTENSION_ID_PLACEHOLDER/"
+  ]
+}
