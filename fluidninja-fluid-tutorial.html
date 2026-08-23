@@ -1,0 +1,2901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluidNinja 的流体魔法 · 算法教学</title>
+<style>
+  :root {
+    /* 语义色 token（对比度均按 WCAG AA 校验） */
+    --bg: #080b14;
+    --bg2: #0a0e18;
+    --surface-1: #0d1320;
+    --surface-2: #101828;
+    --surface-3: #141d30;
+    --line: #1c2638;
+    --line-soft: #182134;
+    --line-strong: #2b3d5c;
+    --text: #dbe4f0;
+    --text-strong: #f0f5fb;
+    --dim: #9aa8bf;
+    --faint: #6b7c95;
+    --accent: #3fd8c5;
+    --accent-dim: #1f8a7e;
+    --accent-soft: rgba(63, 216, 197, 0.09);
+    --orange: #ff9e64;
+    --blue: #7aa2f7;
+    --grad-accent: linear-gradient(135deg, #3fd8c5 0%, #7aa2f7 100%);
+    --shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 32px rgba(2,6,14,0.5);
+    --mono: "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+    --ease-out: cubic-bezier(0.22, 0.68, 0.32, 1);
+    /* 兼容别名（旧类名引用） */
+    --panel: var(--surface-1);
+    --panel2: var(--surface-2);
+    --line2: var(--line-strong);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    font-size: 16px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(1100px 520px at 18% -8%, rgba(63,216,197,0.055), transparent 62%),
+      radial-gradient(900px 480px at 88% 12%, rgba(122,162,247,0.05), transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.028'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+  ::selection { background: rgba(63, 216, 197, 0.25); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+  /* ---------- 侧边导航 ---------- */
+  nav.side {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+    padding: 32px 16px;
+    border-right: 1px solid var(--line-soft);
+    background: linear-gradient(180deg, rgba(13,19,32,0.6), rgba(8,11,20,0.9));
+    backdrop-filter: blur(10px);
+    display: flex; flex-direction: column; gap: 2px;
+    overflow-y: auto; z-index: 50;
+    scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+  }
+  nav.side .brand {
+    font-weight: 700; font-size: 14px; color: var(--accent); letter-spacing: 0.5px;
+    margin: 2px 8px 6px; display: flex; align-items: center; gap: 9px;
+  }
+  nav.side .brand .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  nav.side .subtitle { font-size: 11px; color: var(--faint); margin: 0 8px 16px; line-height: 1.55; }
+  nav.side a {
+    position: relative;
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 7px 10px 7px 16px; border-radius: 8px;
+    color: var(--dim); text-decoration: none; font-size: 13.5px;
+    transition: color 0.18s var(--ease-out), background 0.18s var(--ease-out);
+  }
+  nav.side a .no { font-family: var(--mono); font-size: 11px; color: var(--faint); width: 18px; transition: color 0.18s; }
+  nav.side a::before {
+    content: ""; position: absolute; left: 4px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 0; border-radius: 2px; background: var(--grad-accent);
+    transition: height 0.22s var(--ease-out);
+  }
+  nav.side a:hover { color: var(--text); background: rgba(255,255,255,0.035); }
+  nav.side a.active { color: var(--accent); background: var(--accent-soft); }
+  nav.side a.active::before { height: 62%; }
+  nav.side a.active .no { color: var(--accent-dim); }
+
+  main { margin-left: 240px; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative; min-height: 62vh; display: flex; align-items: center;
+    border-bottom: 1px solid var(--line); overflow: hidden;
+  }
+  .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+  .hero .overlay {
+    position: relative; z-index: 2; padding: 60px 64px; max-width: 860px;
+    pointer-events: none;
+  }
+  .hero .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 3px;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: clamp(30px, 4.2vw, 52px); line-height: 1.25; font-weight: 800;
+    color: #f0f5fb; margin-bottom: 18px;
+    text-shadow: 0 2px 30px rgba(0,0,0,0.6);
+  }
+  .hero h1 .hl { color: var(--accent); }
+  .hero p.sub {
+    font-size: clamp(15px, 1.4vw, 18px); color: #b9c6d8; max-width: 620px;
+    text-shadow: 0 1px 16px rgba(0,0,0,0.7);
+  }
+  .hero .meta {
+    margin-top: 26px; display: flex; gap: 14px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 12px; color: var(--dim);
+  }
+  .hero .meta span {
+    border: 1px solid var(--line2); border-radius: 999px; padding: 4px 14px;
+    background: rgba(7,11,18,0.55); backdrop-filter: blur(6px);
+  }
+  .hero .scroll-hint {
+    position: absolute; bottom: 22px; left: 64px; z-index: 3;
+    color: var(--dim); font-size: 12px; display: flex; align-items: center; gap: 8px;
+    animation: bob 2.2s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+  /* ---------- 章节通用 ---------- */
+  section.chapter {
+    padding: 84px 72px;
+    border-bottom: 1px solid var(--line-soft);
+    max-width: 1420px;
+    position: relative;
+    scroll-margin-top: 20px;
+  }
+  section.chapter:nth-child(even) { background: rgba(13, 19, 32, 0.28); }
+  .ch-kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 3.5px;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .ch-kicker::after { content: ""; width: 44px; height: 1px; background: var(--grad-accent); opacity: 0.55; }
+  .ch-head { display: flex; align-items: baseline; gap: 18px; margin-bottom: 10px; }
+  .ch-num {
+    font-family: var(--mono); font-size: 54px; font-weight: 700;
+    color: transparent; -webkit-text-stroke: 1.2px var(--line-strong); line-height: 1;
+    user-select: none; flex-shrink: 0;
+  }
+  h2.ch-title { font-size: 28px; color: var(--text-strong); font-weight: 800; line-height: 1.4; letter-spacing: 0.2px; }
+  .ch-lede { color: var(--dim); font-size: 15.5px; margin-bottom: 34px; max-width: 780px; }
+  section.chapter p { margin-bottom: 18px; max-width: 760px; }
+  section.chapter p.wide { max-width: none; }
+  section.chapter strong { color: var(--text-strong); }
+  section.chapter em { color: var(--accent); font-style: normal; font-weight: 600; }
+  section.chapter code {
+    font-family: var(--mono); font-size: 0.88em; color: var(--orange);
+    background: rgba(255,158,100,0.08); padding: 2px 7px; border-radius: 5px;
+  }
+  h3.sub {
+    font-size: 18px; color: #e2eaf4; margin: 36px 0 14px; font-weight: 700;
+    padding-left: 12px; border-left: 3px solid var(--accent);
+  }
+
+  /* ---------- 左文右演示双栏 ---------- */
+  .ch-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(520px, 50%);
+    gap: 52px;
+    align-items: start;
+  }
+  @media (min-width: 1680px) {
+    .ch-grid { grid-template-columns: minmax(0, 1fr) 700px; }
+  }
+  .ch-aside { position: sticky; top: 28px; }
+  .ch-aside .demo { margin: 0 0 20px; max-width: none; }
+  .ch-aside .demo:last-child { margin-bottom: 0; }
+  .ch-text > :last-child { margin-bottom: 0; }
+  .ch-text .try, .ch-text .note, .ch-text .formula, .ch-text pre.code { max-width: 100%; }
+
+  /* 对比表 */
+  table.vs { width: 100%; border-collapse: collapse; margin: 18px 0 22px; font-size: 13.5px; max-width: 640px; }
+  table.vs th {
+    text-align: left; font-weight: 600; color: var(--dim); font-size: 12px;
+    padding: 8px 12px; border-bottom: 1px solid var(--line-strong); letter-spacing: 0.5px;
+  }
+  table.vs td { padding: 9px 12px; border-bottom: 1px solid var(--line-soft); color: var(--text); vertical-align: top; }
+  table.vs td:first-child { color: var(--dim); white-space: nowrap; font-family: var(--mono); font-size: 12.5px; }
+  table.vs tr:last-child td { border-bottom: none; }
+  ul.list { margin: 0 0 18px 4px; max-width: 760px; }
+  ul.list li { margin-bottom: 10px; padding-left: 22px; position: relative; }
+  ul.list li::before {
+    content: "▸"; position: absolute; left: 2px; color: var(--accent-dim);
+  }
+  .try {
+    max-width: 760px; margin: 24px 0;
+    background: linear-gradient(180deg, rgba(63,216,197,0.06), rgba(63,216,197,0.03));
+    border: 1px solid rgba(63,216,197,0.16);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 12px 12px 0; padding: 15px 20px; font-size: 14.5px;
+  }
+  .try b { color: var(--accent); }
+  .note {
+    max-width: 760px; margin: 22px 0; font-size: 14px; color: var(--dim);
+    background: var(--surface-1); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px 18px;
+  }
+  .note b { color: var(--orange); }
+  .formula {
+    font-family: var(--mono); text-align: center; font-size: 16.5px;
+    color: #e2eaf4; background: linear-gradient(180deg, var(--surface-1), rgba(13,19,32,0.4));
+    border: 1px solid var(--line); border-left: 3px solid var(--accent-dim);
+    border-radius: 10px;
+    padding: 18px 16px; margin: 26px auto; max-width: 560px;
+    letter-spacing: 0.5px;
+  }
+  .formula small { display: block; color: var(--faint); font-size: 12px; margin-top: 8px; letter-spacing: 0; }
+  pre.code {
+    font-family: var(--mono); font-size: 13px; line-height: 1.75;
+    background: #0a0f1a; border: 1px solid var(--line);
+    border-radius: 12px; padding: 22px 24px 18px; overflow-x: auto;
+    color: #b7c5d8; margin: 20px 0; max-width: 860px; position: relative;
+  }
+  pre.code[data-lang]::before {
+    content: attr(data-lang);
+    position: absolute; top: 0; left: 18px;
+    font-size: 10px; letter-spacing: 2px; color: var(--accent-dim);
+    border-bottom: 1px solid var(--line); padding: 4px 2px 5px;
+    font-family: var(--mono); text-transform: uppercase;
+  }
+  pre.code .cm { color: #5a6b84; }
+  pre.code .kw { color: var(--blue); }
+  pre.code .fn { color: var(--accent); }
+  pre.code .num { color: var(--orange); }
+  pre.code .title { color: #8fd3ff; }
+
+  /* ---------- 演示面板 ---------- */
+  .demo {
+    margin: 30px 0; background: var(--surface-1);
+    border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.2s var(--ease-out);
+  }
+  .demo:hover { border-color: var(--line-strong); }
+  .demo-head {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 16px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--surface-3), var(--surface-2));
+  }
+  .demo-head .live {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  .demo-tag {
+    font-family: var(--mono); font-size: 11px; color: var(--accent);
+    border: 1px solid rgba(63,216,197,0.35); border-radius: 5px;
+    padding: 1px 8px; background: rgba(63,216,197,0.07); white-space: nowrap;
+  }
+  .demo-title { font-size: 13.5px; font-weight: 600; color: #dce6f2; overflow: hidden; text-overflow: ellipsis; }
+  .demo-body { position: relative; }
+  .demo-body canvas.sim {
+    display: block; width: 100%; aspect-ratio: 16 / 10.5;
+    cursor: crosshair; touch-action: none; background: #05080e;
+  }
+  .demo-body canvas.sim.big { aspect-ratio: 16 / 9; }
+  .demo-ctrl {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 12px 16px; border-top: 1px solid var(--line);
+    background: var(--surface-2); font-size: 13px;
+  }
+  .ctrl { display: flex; align-items: center; gap: 8px; color: var(--dim); white-space: nowrap; }
+  .demo-hint {
+    padding: 9px 16px 12px; font-size: 12.5px; color: var(--faint);
+    background: var(--surface-2); border-top: 1px solid var(--line-soft);
+  }
+  .gl-fallback {
+    padding: 60px 24px; text-align: center; color: var(--dim); font-size: 14px;
+  }
+  .fps {
+    font-family: var(--mono); font-size: 12px; color: var(--accent-dim);
+    margin-left: auto;
+  }
+
+  /* 开关 */
+  .switch { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+  .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    width: 34px; height: 19px; border-radius: 999px; background: #1d2839;
+    position: relative; transition: background 0.2s; flex-shrink: 0;
+    border: 1px solid var(--line2);
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px;
+    border-radius: 50%; background: var(--dim); transition: all 0.2s;
+  }
+  .switch input:checked + .track { background: rgba(63,216,197,0.3); border-color: var(--accent-dim); }
+  .switch input:checked + .track::after { left: 17px; background: var(--accent); }
+  .switch.on-blue input:checked + .track { background: rgba(122,162,247,0.3); border-color: #4a6ec0; }
+  .switch.on-blue input:checked + .track::after { background: var(--blue); }
+
+  /* 分段按钮 */
+  .seg { display: inline-flex; background: #0a111c; border: 1px solid var(--line2); border-radius: 8px; padding: 2px; gap: 2px; flex-wrap: wrap; }
+  .seg button {
+    font-family: inherit; font-size: 12.5px; color: var(--dim);
+    background: transparent; border: 0; border-radius: 6px;
+    padding: 4px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button.active { background: rgba(63,216,197,0.14); color: var(--accent); }
+  .seg button:not(.active):hover { background: rgba(255,255,255,0.03); }
+
+  .btn {
+    font-family: inherit; font-size: 12.5px; color: var(--text);
+    background: #101826; border: 1px solid var(--line2); border-radius: 8px;
+    padding: 5px 14px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent-dim); color: var(--accent); }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 130px; height: 3px;
+    background: #1d2839; border-radius: 3px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); border: 2px solid #0b1019; cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent); border: 2px solid #0b1019; cursor: pointer;
+  }
+  .val { font-family: var(--mono); font-size: 12px; color: var(--accent); min-width: 26px; }
+
+  /* ---------- 流水线图 ---------- */
+  .pipeline {
+    display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px;
+    margin: 28px 0; max-width: 880px;
+  }
+  .pipe-step {
+    background: var(--panel); border: 1px solid var(--line2); border-radius: 10px;
+    padding: 10px 14px; text-align: center; flex: 1; min-width: 96px;
+    display: flex; flex-direction: column; gap: 3px; justify-content: center;
+  }
+  .pipe-step .t { font-size: 13.5px; font-weight: 600; color: #dce6f2; }
+  .pipe-step .s { font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+  .pipe-step.hot { border-color: var(--accent-dim); background: rgba(63,216,197,0.06); }
+  .pipe-step.hot .t { color: var(--accent); }
+  .pipe-arrow { display: flex; align-items: center; color: var(--faint); font-size: 15px; }
+
+  .figure { margin: 28px 0; text-align: center; max-width: 1040px; }
+  .figure svg { max-width: 100%; height: auto; }
+  .figure .cap { font-size: 12.5px; color: var(--faint); margin-top: 10px; }
+
+  /* ---------- 参考列表 ---------- */
+  .refs { max-width: 760px; }
+  .refs a {
+    color: var(--blue); text-decoration: none; border-bottom: 1px dotted rgba(122,162,247,0.4);
+  }
+  .refs a:hover { color: #a8c4fb; }
+  .refs li { color: var(--dim); }
+
+  footer.site {
+    padding: 40px 64px; color: var(--faint); font-size: 13px;
+    display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  }
+  footer.site .mono { font-family: var(--mono); font-size: 12px; }
+
+  .reveal { opacity: 0; transform: translateY(14px); transition: all 0.7s cubic-bezier(0.2,0.7,0.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ---------- 阅读进度条 / 回到顶部 ---------- */
+  #progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    transform-origin: 0 50%; transform: scaleX(0);
+    z-index: 100; pointer-events: none;
+  }
+  #totop {
+    position: fixed; right: 30px; bottom: 30px; width: 44px; height: 44px;
+    border-radius: 50%; border: 1px solid var(--line2); background: rgba(13,19,30,0.92);
+    color: var(--dim); font-size: 17px; cursor: pointer; z-index: 90;
+    opacity: 0; visibility: hidden; transform: translateY(8px);
+    transition: all 0.25s ease; backdrop-filter: blur(6px);
+  }
+  #totop.show { opacity: 1; visibility: visible; transform: none; }
+  #totop:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+  /* ---------- 代码一键复制 ---------- */
+  pre.code { position: relative; }
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--faint);
+    background: rgba(10,15,24,0.9); border: 1px solid var(--line);
+    border-radius: 6px; padding: 3px 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+  /* ---------- 附录 · 算法图鉴 ---------- */
+  nav.side .nav-label {
+    font-size: 10.5px; color: var(--faint); letter-spacing: 2px;
+    margin: 16px 0 4px; padding-left: 10px;
+  }
+  nav.side .nav-label:first-of-type { margin-top: 4px; }
+  .ap-lede { color: var(--dim); font-size: 15px; margin-bottom: 6px; }
+  .algo-group {
+    display: flex; align-items: center; gap: 14px;
+    margin: 44px 0 20px; font-size: 14.5px; font-weight: 700; color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .algo-group::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .algo-group .gno { font-family: var(--mono); font-size: 11px; color: var(--faint); font-weight: 400; }
+  .algo-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px 24px; margin-bottom: 18px; max-width: 1080px;
+    transition: border-color 0.2s ease;
+  }
+  .algo-card:hover { border-color: #2b3d5c; }
+  .algo-head { display: flex; align-items: flex-start; gap: 13px; margin-bottom: 15px; }
+  .algo-no {
+    font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--accent);
+    border: 1px solid rgba(63,216,197,0.35); background: rgba(63,216,197,0.07);
+    border-radius: 7px; padding: 3px 9px; flex-shrink: 0; margin-top: 2px;
+  }
+  .algo-head h4 { font-size: 16.5px; color: #e8eff7; line-height: 1.45; }
+  .algo-en { font-size: 11.5px; color: var(--faint); font-weight: 400; font-family: var(--mono); margin-left: 8px; }
+  .algo-essence { font-size: 13px; color: var(--accent); margin-top: 3px; }
+  .algo-stage {
+    margin-left: auto; font-size: 11px; color: var(--dim);
+    border: 1px solid var(--line2); border-radius: 999px; padding: 2px 11px;
+    white-space: nowrap; flex-shrink: 0; margin-top: 4px;
+  }
+  .algo-stage.enemy { color: var(--orange); border-color: rgba(255,158,100,0.35); }
+  .algo-body { display: flex; gap: 22px; align-items: flex-start; }
+  .algo-fig {
+    flex: 0 0 300px; background: #0a0f18; border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 10px 8px;
+  }
+  .algo-fig svg { display: block; width: 100%; height: auto; }
+  .algo-fig .fig-cap { font-size: 11.5px; color: var(--faint); text-align: center; margin-top: 6px; line-height: 1.55; }
+  .algo-text { flex: 1; min-width: 0; }
+  .algo-text p { font-size: 14.5px; margin-bottom: 12px; line-height: 1.8; }
+  .algo-text .formula { margin: 12px 0; padding: 11px 14px; font-size: 14px; }
+  .algo-text pre.code { margin: 10px 0; font-size: 12.5px; padding: 13px 16px; }
+  .algo-link {
+    display: inline-block; margin-top: 2px; font-size: 13px; color: var(--blue);
+    text-decoration: none; border-bottom: 1px dotted rgba(122,162,247,0.4);
+  }
+  .algo-link:hover { color: #a8c4fb; }
+  /* 深入一层折叠块 */
+  .deep { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(10,15,26,0.6); }
+  .deep summary {
+    cursor: pointer; list-style: none; user-select: none;
+    padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--dim);
+    display: flex; align-items: center; gap: 8px;
+    transition: color 0.18s;
+  }
+  .deep summary::-webkit-details-marker { display: none; }
+  .deep summary::before {
+    content: ""; width: 7px; height: 7px; flex-shrink: 0;
+    border-right: 1.6px solid var(--accent-dim); border-bottom: 1.6px solid var(--accent-dim);
+    transform: rotate(-45deg); transition: transform 0.2s var(--ease-out);
+  }
+  .deep[open] summary::before { transform: rotate(45deg); }
+  .deep summary:hover { color: var(--accent); }
+  .deep .deep-body { padding: 2px 16px 14px; font-size: 13.8px; color: var(--dim); line-height: 1.85; }
+  .deep .deep-body p { margin: 8px 0; }
+  .deep .deep-body b { color: var(--text); font-weight: 600; }
+  .deep .deep-body code {
+    font-family: var(--mono); font-size: 0.9em; color: var(--orange);
+    background: rgba(255,158,100,0.08); padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width: 1240px) {
+    .ch-grid { grid-template-columns: 1fr; gap: 28px; }
+    .ch-aside { position: static; }
+  }
+  @media (max-width: 980px) {
+    nav.side {
+      position: sticky; top: 0; bottom: auto; width: 100%; height: auto;
+      flex-direction: row; align-items: center; gap: 2px; padding: 10px 14px;
+      overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--line);
+    }
+    nav.side .brand, nav.side .subtitle, nav.side .nav-label { display: none; }
+    nav.side a { padding: 6px 11px 6px 13px; white-space: nowrap; }
+    nav.side a .no { display: none; }
+    nav.side a::before { display: none; }
+    main { margin-left: 0; }
+    section.chapter { padding: 52px 22px; scroll-margin-top: 64px; }
+    .hero .overlay { padding: 40px 24px; }
+    .hero .scroll-hint { left: 24px; }
+    footer.site { padding: 30px 22px; }
+    .algo-body { flex-direction: column; }
+    .algo-fig { flex-basis: auto; width: 100%; }
+    #totop { right: 16px; bottom: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress" aria-hidden="true"></div>
+
+<nav class="side" id="nav">
+  <div class="brand"><span class="dot"></span>FLUID · 101</div>
+  <div class="subtitle">FluidNinja 算法拆解<br>循序渐进 · 可交互</div>
+  <div class="nav-label">课程</div>
+  <a href="#ch0"><span class="no">00</span>FluidNinja 在用什么魔法</a>
+  <a href="#ch1"><span class="no">01</span>先建立直觉：场</a>
+  <a href="#ch2"><span class="no">02</span>平流：让物质跟风走</a>
+  <a href="#ch3"><span class="no">03</span>施力与保住旋涡</a>
+  <a href="#ch4"><span class="no">04</span>灵魂：不可压缩与投影</a>
+  <a href="#ch5"><span class="no">05</span>总装：一帧的流水线</a>
+  <a href="#ch6"><span class="no">06</span>无中生有：火焰与河流</a>
+  <a href="#ch7"><span class="no">07</span>FluidNinja 的工程魔法</a>
+  <a href="#ch8"><span class="no">08</span>带走它</a>
+  <div class="nav-label">速查手册</div>
+  <a href="#appendix"><span class="no">A</span>算法图鉴 · 15 个零件</a>
+</nav>
+
+<main>
+
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <header class="hero">
+    <canvas id="canvas-hero" aria-label="流体模拟背景"></canvas>
+    <div class="overlay">
+      <div class="kicker">REAL-TIME FLUIDS · INTERACTIVE ESSAY</div>
+      <h1>FluidNinja 的流体魔法，<br>一次<span class="hl">拆到分子级</span></h1>
+      <p class="sub">它凭什么是游戏里最好看的实时流体？本文从零开始，一步一步搭出它背后的经典算法 —— Jos Stam 的 Stable Fluids，并且每一步都能上手玩。</p>
+      <div class="meta">
+        <span>零依赖 · 单文件</span>
+        <span>8 个演示 · 15 张算法卡片</span>
+        <span>阅读约 25 分钟</span>
+      </div>
+    </div>
+    <div class="scroll-hint">↓ 往下滚动开始<div style="margin-left:6px">🖱️ 背景流体也可以拖动</div></div>
+  </header>
+
+  <!-- ═══════════════ CH 0 ═══════════════ -->
+  <section class="chapter" id="ch0">
+    <div class="ch-kicker">Chapter 00 · What Sorcery Is This</div>
+    <div class="ch-head"><div class="ch-num">00</div><h2 class="ch-title">FluidNinja 在用什么魔法？</h2></div>
+    <p class="ch-lede">先把结论放在桌上：它不是粒子特效，而是一颗真正在解流体力学方程的 GPU 求解器。</p>
+
+    <p><strong>FluidNinja Fluids</strong> 是 Unity / Unreal 商店里最知名的实时流体资产之一：能做沿地形流动的河流、翻涌的熔岩、被角色踩出涟漪的水面 —— 全部实时计算，全部跑在 GPU 上，甚至能和物理物体互相作用。</p>
+    <p>它是闭源商业资产，官方没有公开内部实现。但从它的表现形态（贴在地形上的连续流体、可控分辨率、与渲染管线深度集成）和技术谱系来看，它属于一个公开的、非常经典的算法家族：</p>
+    <div class="formula" style="max-width:640px">
+      Jos Stam《Stable Fluids》(SIGGRAPH 1999)<br>+ GPU Gems 第 38 章的 GPU 实现路线
+      <small>这也是几乎所有游戏引擎实时流体（包括各种 "WebGL Fluid" 网红 demo）的共同祖先</small>
+    </div>
+
+    <div class="note"><b>诚实声明：</b>本文讲的是 FluidNinja <b>所依托的公开经典算法</b>，而不是对它源码的逆向。理解了这套算法，你就理解了这类资产的内核；资产本身的价值在于把它工程化、产品化的部分 —— 我们在第 7 章专门讲那部分。</div>
+
+    <p>这套算法的世界观一句话就能说完：</p>
+    <p class="wide"><strong style="font-size:17px">不追踪每一滴水，而是把空间切成网格，每个格子记录一缕"风"，然后让四个简单步骤每帧轮流上场。</strong></p>
+
+    <h3 class="sub">这四个步骤，其实是把一条方程拆成了四份零钱</h3>
+    <p>流体力学的核心是<strong>纳维-斯托克斯方程（Navier-Stokes）</strong>。它看起来吓人，但拆开看每一项都是一件你熟悉的事：</p>
+    <pre class="code" data-lang="白话 N-S"><span class="cm">// 不可压缩流体的动量方程，逐项翻译：</span>
+∂u/∂t = −(u·∇)u   −   (1/ρ)∇p   +   ν∇²u   +   f
+        <span class="cm">① 惯性：风把风自己吹走     —— 平流（第 2 章）</span>
+                          <span class="cm">② 压力：挤的地方推人不挤的地方 —— 投影（第 4 章）</span>
+                                        <span class="cm">③ 粘性：内摩擦            —— 直接扔掉（见下）</span>
+                                                <span class="cm">④ 外力：鼠标/重力/爆炸 —— splat（第 3 章）</span></pre>
+    <p>游戏业的三个关键偷懒，成就了实时流体：<strong>① 粘性项直接扔掉</strong>——不是不重要，而是平流算法自带的数值耗散会免费送一点粘性（第 2 章你会亲眼看到）；<strong>② 每一项分开算、算完再合</strong>——数学上叫算子分裂，每一项单独都有一个便宜到离谱的解法；<strong>③ 全部搬到 GPU</strong>——每个格子的计算彼此独立，正是 GPU 一万个核心最擅长的事。</p>
+
+    <h3 class="sub">一帧的完整流水线</h3>
+    <p>把四个零钱按固定顺序兑换，就是每帧在 GPU 上发生的事：</p>
+
+    <div class="pipeline">
+      <div class="pipe-step hot"><div class="t">① 外力</div><div class="s">鼠标 / 风 / 爆炸</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="t">② 涡度约束</div><div class="s">保住小旋涡</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="t">③ 散度</div><div class="s">给每个格子记账</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="t">④ 压力迭代</div><div class="s">把账算平</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="t">⑤ 修正速度</div><div class="s">u ← u − ∇p</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="t">⑥ 平流搬运</div><div class="s">速度和染料</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step"><div class="t">⑦ 渲染输出</div><div class="s">颜色 / 法线</div></div>
+    </div>
+
+    <p>现在一个都看不懂完全正常。接下来每一章拆一个，每章都有一个能玩的演示。到第 5 章，你会亲手把这条流水线全部点亮。</p>
+  </section>
+
+  <!-- ═══════════════ CH 1 ═══════════════ -->
+  <section class="chapter" id="ch1">
+    <div class="ch-kicker">Chapter 01 · The Notion of a Field</div>
+    <div class="ch-head"><div class="ch-num">01</div><h2 class="ch-title">先建立直觉：什么是"场"</h2></div>
+    <p class="ch-lede">模拟流体有两种截然相反的思路，FluidNinja 选了第二种。先用一张表看清楚它们差在哪。</p>
+
+    <div class="ch-grid">
+      <div class="ch-text">
+        <h3 class="sub">思路 A：追踪每个水滴（拉格朗日 / 粒子法）</h3>
+        <p>想象给每一滴水贴个标签，每帧问它："你在哪、速度多少、邻居是谁？" 这就是 SPH 粒子流体。直觉、好看，但代价昂贵：一升水有天文数字的分子，游戏中几十万粒子已属重负载，而且邻居查找、压力求解全是麻烦事。</p>
+
+        <h3 class="sub">思路 B：站在原地观测"风"（欧拉 / 网格法）— FluidNinja 的选择</h3>
+        <p>反过来：把空间切成网格（比如 128 × 128 个格子），<strong>每个格子只记录一件事 —— 此刻流过这个位置的速度向量</strong>。这一整张"每格一格风向风速"的表，叫做<strong>速度场</strong>，数学上记作 u(x, t)：位置 x、时刻 t 处的一个向量。烟、墨、颜色这些"被搬运的东西"另存一张<strong>染料场</strong>。流体的一切运动，就是这两张表互相作用的循环：<em>速度场搬运染料，物理规律修正速度场</em>。</p>
+
+        <table class="vs">
+          <thead><tr><th>维度</th><th>粒子法（拉格朗日）</th><th>网格法（欧拉）— 本文</th></tr></thead>
+          <tbody>
+            <tr><td>存储什么</td><td>每颗粒子的位置和速度</td><td>每个格子的速度和染料</td></tr>
+            <tr><td>数据结构</td><td>变长数组，需要空间哈希找邻居</td><td>就是几张图片（纹理）</td></tr>
+            <tr><td>与 GPU 的关系</td><td>友好但需要间接寻址</td><td>天生完美：一个像素 = 一个格子</td></tr>
+            <tr><td>细节表现</td><td>粒子足够多时锐利</td><td>受限于网格分辨率，偏"糊"</td></tr>
+            <tr><td>内存与成本</td><td>随粒子数线性涨</td><td>固定：只取决于网格分辨率</td></tr>
+          </tbody>
+        </table>
+
+        <p>游戏偏爱网格法的关键一行是"<b>与 GPU 的关系</b>"：整个模拟状态就是几张纹理，每一步计算都是"对一张纹理的每个像素独立做同样的事"——这正好是 fragment shader / compute shader 的工作方式，一万个核心同时开工。FluidNinja 敢承诺移动端也能跑，底气就在这。</p>
+
+        <div class="try"><b>试一试：</b>右侧演示里，先看<b>粒子视图</b>：几百个粒子被同一张场推动，拖尾自然织出流线。再切到<b>箭头视图</b> —— 每个箭头就是一个格子里存的速度向量，你在直接看那张看不见的表。拖动鼠标，把你的"手风"刻进场里，看它如何被后来的风推着走。注意：粒子只是"记者"，删掉它们场依然存在 —— <b>场才是流体的本体</b>。</div>
+
+        <p style="font-size:13.5px;color:var(--faint)">这个演示用 Canvas2D 实现（CPU 上算几百个粒子绰绰有余）。从下一章开始，我们切换到真正的 GPU 网格模拟 —— 那才是 FluidNinja 的形态。</p>
+      </div>
+
+      <aside class="ch-aside">
+        <div class="demo reveal">
+          <div class="demo-head"><span class="live"></span><span class="demo-tag">演示 1-1</span><span class="demo-title">速度场 · 粒子只是记者，场才是主角</span></div>
+          <div class="demo-body"><canvas id="canvas-ch1" class="sim" aria-label="速度场粒子演示" style="background:#05080e;cursor:crosshair"></canvas></div>
+          <div class="demo-ctrl">
+            <div class="seg" id="ch1-view">
+              <button class="active" data-v="particles">粒子视图</button>
+              <button data-v="arrows">箭头视图（直接看场）</button>
+            </div>
+          </div>
+          <div class="demo-hint">按住拖动，把你的"手风"刻进场里。</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CH 2 ═══════════════ -->
+  <section class="chapter" id="ch2">
+    <div class="ch-kicker">Chapter 02 · Advection</div>
+    <div class="ch-head"><div class="ch-num">02</div><h2 class="ch-title">平流：让物质跟着风走</h2></div>
+    <p class="ch-lede">Advection —— 整套算法里最精妙的一步，也是最反直觉的一步。</p>
+
+    <div class="ch-grid">
+      <div class="ch-text">
+        <h3 class="sub">为什么"把值推走"是条死路</h3>
+        <p>场有了，下一个问题：染料怎么动？最直觉的答案是前向欧拉："把每个格子的墨按速度推到下一个格子去。" 但在网格上这有两个致命问题：</p>
+        <ul class="list">
+          <li><strong>shader 只会"取"，不会精准地"放"。</strong>GPU 每个像素独立计算，它能把值"撒"（splat）到邻域再加权，但撒出去的权重加起来不再精确等于 1 —— <em>质量凭空增减</em>，墨会越推越浓或越推越稀，数值说炸就炸。</li>
+          <li><strong>一步跨多格</strong>。速度快、帧率低时，一个格子的值理论上要飞越好几个格子，中间的格子根本不知道该接多少 —— 这就是著名的 <em>CFL 条件</em>：显式平流要求"一步最多走一格"，否则不稳定。</li>
+        </ul>
+
+        <h3 class="sub">半拉格朗日：倒着走一步，去上游取水</h3>
+        <p>Stam 的天才翻转是反过来问：<strong>"此刻停在我这格的这缕空气，<em>上一刻</em>在哪？"</strong> 答案很简单 —— 沿着速度<em>倒退</em>一小步：</p>
+        <div class="formula">
+          采样位置 = 当前位置 − Δt × 速度(当前格子)<br>
+          <small>新值 = 旧场在"上游位置"的插值采样 —— 半拉格朗日（Semi-Lagrangian）平流</small>
+        </div>
+        <p>这个方向翻转一次性解决了上面两个死穴：因为"倒退采样"永远只是在旧场里做一次插值（相邻格子取加权平均），<strong>无论速度多大、时间步多长，结果都有界</strong> —— 不满足 CFL 也稳定，这就是 <em>Stable</em> Fluids 里 "Stable" 的由来。而质量虽不精确守恒，却永远不会爆炸性失衡。</p>
+
+        <pre class="code" data-lang="GLSL"><span class="cm">// 平流 shader 的全部核心，就这三行：</span>
+<span class="kw">vec2</span> v    = <span class="fn">texture</span>(uVelocity, vUv).xy;   <span class="cm">// 这格的风</span>
+<span class="kw">vec2</span> coord = vUv - dt * v * texelSize;         <span class="cm">// 逆着风倒退一步 → 上游坐标</span>
+<span class="kw">vec4</span> result = <span class="fn">texture</span>(uSource, coord);     <span class="cm">// 去上游把值取回来</span></pre>
+
+        <h3 class="sub">代价：数值耗散</h3>
+        <p>稳定性不是白来的。插值本质是"取平均"，平均就是<strong>轻微的模糊</strong>：尖锐的边缘变圆、小尺度的涡被一点点磨掉 —— 每帧磨一点，累积起来流体就显得"糊、像蜂蜜"。这叫数值耗散，它不是 bug，反而顺便替代了 Navier-Stokes 里最贵的粘性项 ν∇²u（第 0 章说过：直接扔掉，这里免费送）。第 3 章的涡度约束就是专门来救它的。</p>
+
+        <div class="try"><b>试一试：</b>① 右侧投一个染料方块，盯着方块的直角 —— 几分钟内变圆、变糊，这就是数值耗散在磨细节。② 勾上<b>反转平流方向</b>：墨立刻朝你拖动的<b>反方向</b>跑 —— 因为"前向采样"在 shader 里的语义是把未来位置的值取回来，方向天然是反的；这正是前向法必须用昂贵 splat 的原因。③ 勾上<b>显示模拟网格</b>：真正的模拟只有 96×96 个格子，丝滑画面是放大后的效果 —— 这引出 FluidNinja 的第一件工程魔法，第 7 章详述。</div>
+      </div>
+
+      <aside class="ch-aside">
+        <div class="demo reveal">
+          <div class="demo-head"><span class="live"></span><span class="demo-tag">演示 2-1</span><span class="demo-title">平流 · 染料被速度场搬运</span></div>
+          <div class="demo-body"><canvas id="canvas-ch2" class="sim" aria-label="平流演示"></canvas></div>
+          <div class="demo-ctrl">
+            <label class="switch on-blue"><input type="checkbox" id="ch2-forward"><span class="track"></span>反转平流方向</label>
+            <label class="switch"><input type="checkbox" id="ch2-grid"><span class="track"></span>显示模拟网格</label>
+          </div>
+          <div class="demo-ctrl">
+            <button class="btn" id="ch2-block">投放染料方块</button>
+            <button class="btn" id="ch2-reset">重置</button>
+          </div>
+          <div class="demo-hint">按住拖动注入风与墨。"投放染料方块"会同时生成一个逆时针环流。</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CH 3 ═══════════════ -->
+  <section class="chapter" id="ch3">
+    <div class="ch-kicker">Chapter 03 · Forces &amp; Vorticity</div>
+    <div class="ch-head"><div class="ch-num">03</div><h2 class="ch-title">给流体施力，并保住旋涡</h2></div>
+    <p class="ch-lede">交互的全部秘密只是一个高斯函数；好看的全部秘密是一个"反耗散"补丁。</p>
+
+    <div class="ch-grid">
+      <div class="ch-text">
+        <h3 class="sub">外力：往场里"拍"一下</h3>
+        <p>鼠标划过、角色跳进水里、爆炸冲击波 —— 在这套算法眼里全是同一件事：<strong>在速度场的某个位置，按高斯衰减加一团速度</strong>。中心加得多、远处指数归零，像手指戳水面。一次鼠标拖动 = 两个 splat（速度 + 染料）：</p>
+        <pre class="code" data-lang="GLSL"><span class="cm">// splat：在 point 处按高斯衰减叠加一团"力"</span>
+<span class="kw">vec2</span> p = vUv - point;
+<span class="kw">vec3</span> add = <span class="fn">exp</span>(-<span class="fn">dot</span>(p, p) / radius) * color;  <span class="cm">// color = (力x, 力y, 0)</span>
+result = <span class="fn">texture</span>(uTarget, vUv) + add;          <span class="cm">// 速度、染料都这么加</span></pre>
+        <p>两个值得注意的工程细节：力的量级是"像素速度差 × 一个大系数"（本页用 6000），因为格子很小，uv 坐标下的位移数值极小，要放大才有动感；半径参数会按画面宽高比修正（<code>p.x *= aspect</code>），否则宽屏上"圆"会变成"椭圆"。</p>
+
+        <h3 class="sub">涡度：先给"旋转"定一个数</h3>
+        <p>想保住旋涡，先得能<strong>测量</strong>旋涡。想象往格子里放一根微小的桨轮：它转不转、往哪转，就是<strong>涡度（curl）</strong>ω —— 逆时针为正、顺时针为负、静止为零。数学定义是 ω = ∂u_y/∂x − ∂u_x/∂y（"竖直速度的左右变化"减"水平速度的上下变化"），离散化就是对邻居做差分，一行代码：</p>
+        <pre class="code" data-lang="GLSL"><span class="cm">// 四个邻居各借一个分量，相减得旋转强度</span>
+<span class="kw">float</span> L = <span class="fn">texture</span>(uVelocity, 左).y;  <span class="cm">// 左边邻居的竖直速度</span>
+<span class="kw">float</span> R = <span class="fn">texture</span>(uVelocity, 右).y;
+<span class="kw">float</span> T = <span class="fn">texture</span>(uVelocity, 上).x;  <span class="cm">// 上边邻居的水平速度</span>
+<span class="kw">float</span> B = <span class="fn">texture</span>(uVelocity, 下).x;
+<span class="kw">float</span> curl = R - L - T + B;</pre>
+
+        <h3 class="sub">涡度约束：给快被磨平的旋涡"扶一把"</h3>
+        <p>第 2 章说过，平流的插值像轻微的摩擦，会把小旋涡一点点磨没 —— 流体看起来"糊"、没有生气。电影游戏业的经典补丁是 <strong>Vorticity Confinement</strong>（Fedkiw 等人，1996），思路分三步：</p>
+        <ul class="list">
+          <li>算每个格子的涡度 ω（上面的 curl）；</li>
+          <li>再算 |ω| 的<strong>梯度方向</strong> ∇|ω| —— 它指向"附近哪里转得更凶"（旋涡中心的涡度最强，梯度从弱指向强）；</li>
+          <li>取 ∇|ω| 与 ω 的<b>叉积</b>得到一个与旋转方向相切的力，乘上强度 ε，加回速度场 —— <strong>人为把能量还给快被耗散吃掉的涡</strong>。</li>
+        </ul>
+        <div class="formula">
+          F = ε · dt · ( ∇|ω| × ω )&nbsp;&nbsp;→&nbsp;&nbsp;u ← u + F
+          <small>ε 是"漩涡劲道"旋钮 —— 数值耗散的官方解药</small>
+        </div>
+        <p><b>参数手感</b>：ε = 0 是纯蜂蜜世界；10~20 是"烟"的自然量级；30 以上开始出现活跃湍流、旋涡互相吞噬；拉满 50 会显得"过咸"——能量强到不自然。FluidNinja 演示里那些生动的湍流感，很大程度上就是这个参数调得好。</p>
+
+        <div class="try"><b>试一试：</b>右侧把滑块拉到 <b>0</b>，快速画几个圈 —— 旋涡几秒内就被"摩擦"磨平。再推到 <b>40</b> 画同样的圈：旋涡不但活着，还会互相吞噬、翻卷出细丝。<span style="opacity:.7">（此演示中压力投影默认开启——把它当黑盒，下一章马上解剖。）</span></div>
+      </div>
+
+      <aside class="ch-aside">
+        <div class="demo reveal">
+          <div class="demo-head"><span class="live"></span><span class="demo-tag">演示 3-1</span><span class="demo-title">涡度约束 · 把滑块从 0 拉到 40</span></div>
+          <div class="demo-body"><canvas id="canvas-ch3" class="sim" aria-label="涡度演示"></canvas></div>
+          <div class="demo-ctrl">
+            <div class="ctrl"><span>涡度强度</span><input type="range" id="ch3-curl" min="0" max="50" step="1" value="4"><span class="val" id="ch3-curl-val">4</span></div>
+          </div>
+          <div class="demo-hint">画圈拖动制造旋涡，然后调滑块对比旋涡的存活时间与翻腾力度。</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CH 4 ═══════════════ -->
+  <section class="chapter" id="ch4">
+    <div class="ch-kicker">Chapter 04 · Projection · The Soul</div>
+    <div class="ch-head"><div class="ch-num">04</div><h2 class="ch-title">灵魂步骤：不可压缩与压力投影</h2></div>
+    <p class="ch-lede">前面所有步骤都可以糊弄，唯独这一步决定了它"像水"还是"像烟"。这也是最难的一章 —— 我们把推导链一环一环拆开。</p>
+
+    <div class="ch-grid">
+      <div class="ch-text">
+        <h3 class="sub">第一环：水的一个铁律 —— 挤不动</h3>
+        <p>水的不可压缩性意味着：任何一个格子，<strong>流进来多少，就必须流出去多少</strong>。把每个格子想成一个账本：四面八方的流入减流出，必须恰好等于零。这个"净流出量"有一个名字 —— <strong>散度（divergence）</strong>，记作 ∇·u：</p>
+        <div class="formula">∇·u = 0&nbsp;&nbsp;&nbsp;（不可压缩条件：账必须平）</div>
+        <p>问题来了：你随手"拍"出来的速度场、被平流搬过一圈的速度场，几乎不可能恰好满足这条铁律 —— 有的格子净流出（像源），有的净流入（像洞）。真实的水会立刻用<strong>压力</strong>自救：挤的地方压力大，把自己推开；疏的地方压力小，把周围吸来。</p>
+
+        <h3 class="sub">第二环：数学一句话 —— 找一个"熨斗场"</h3>
+        <p>把上面那句物理直觉翻译成数学：找一个标量场 p（压力），使得 <code>u − ∇p</code> 恰好无散度。展开这个要求，p 必须满足一个<strong>泊松方程</strong>：</p>
+        <div class="formula">∇²p = ∇·u&nbsp;&nbsp;&nbsp;然后&nbsp;&nbsp;&nbsp;u ← u − ∇p<small>修正后的 u 散度恰好为零 —— 这套操作叫"投影"（projection）</small></div>
+        <p>直白解读：等式右边是"账本"（哪里不平），左边 ∇²p 是"压力的弯曲程度"。解出 p，逆着它的梯度修正速度，账就平了。压力就是把速度场<b>熨平到不可压缩的那只熨斗</b>。</p>
+
+        <h3 class="sub">第三环：游戏一整套 —— Jacobi 迭代</h3>
+        <p>真正联立求解百万个方程在游戏里不存在。GPU 上的做法是 <strong>Jacobi 迭代</strong>：给每个格子一个超简单的更新规则，反复刷：</p>
+        <pre class="code" data-lang="GLSL"><span class="cm">// 压力 Jacobi 迭代 —— 每个格子只做一次"取邻居平均再减账"：</span>
+p(自己) = ( p左 + p右 + p上 + p下 − 散度(自己) ) / <span class="num">4.0</span>;
+<span class="cm">// 把这行刷 20~40 遍全屏，p 就收敛到足够接近真解</span></pre>
+        <p>三个常被问到的问题，一次说清：</p>
+        <ul class="list">
+          <li><strong>为什么除以 4？</strong>离散的 ∇²p 在 2D 网格上就是"四邻之和减四倍的自己"（拉普拉斯的差分形式）。把 ∇²p = div 移项，就得到"自己 = (四邻之和 − div)/4"——系数不是调出来的，是代数移项移出来的。</li>
+          <li><strong>为什么刷得越多越准？</strong>每一轮迭代相当于信息向四周<strong>扩散一格</strong>：N 轮之后，每个格子的压力"知道"了 N 格之外的账目。全局的账要传遍画面，就得刷足够多轮 —— 这也是为什么迭代 1 次是"果冻"（只有局部修正），40 次是"水"（全局都平了）。</li>
+          <li><strong>不从零开始行不行？</strong>不但行，还更快 —— <b>热启动</b>：每帧把上一帧的压力留 80% 当初始猜测。流体是连续演化的，上一帧的解和这一帧差别很小，收敛快一大截。</li>
+        </ul>
+        <p>另外两个工程细节：游戏<b>敢只迭代一二十次</b>——"接近不可压缩"在视觉上已经足够真；贴边格子的法向速度取反（墙不可穿透），让撞墙的账也算得对。</p>
+
+        <div class="try"><b>试一试（本章精华，右边的演示会陪你做完）：</b><br>① 切到<b>散度视图</b>，拖一下：拖动边缘出现红蓝对立的斑点 —— 红是"源"（净流出），蓝是"汇"（净流入），这就是没算平的账。投影<b>开启</b>时它们一帧内基本消失（被熨平了）；<b>关闭</b>投影再拖，斑点会长期存在、越积越多。<br>② 回到<b>染料视图</b>，关掉投影：墨出现不自然的堆积斑、运动有"气体感" —— 这个世界的"水"可以被压缩了。<br>③ 把<b>压力迭代</b>滑到 1：流体质感立刻变"软"、像果冻缓慢塌陷（账只在局部被修正）；推到 40+：锋利的水感回来了。<br>④ <b>压力视图</b>（灰度）里拖一下：亮斑是压力峰、暗斑是压力谷 —— 熨斗的工作面。</div>
+      </div>
+
+      <aside class="ch-aside">
+        <div class="demo reveal">
+          <div class="demo-head"><span class="live"></span><span class="demo-tag">演示 4-1</span><span class="demo-title">投影 · 关掉它，流体立刻"漏气"</span></div>
+          <div class="demo-body"><canvas id="canvas-ch4" class="sim" aria-label="压力投影演示"></canvas></div>
+          <div class="demo-ctrl">
+            <label class="switch"><input type="checkbox" id="ch4-proj" checked><span class="track"></span>压力投影</label>
+            <div class="ctrl">可视化
+              <div class="seg" id="ch4-view">
+                <button class="active" data-m="0">染料</button>
+                <button data-m="2">散度</button>
+                <button data-m="3">压力</button>
+              </div>
+            </div>
+          </div>
+          <div class="demo-ctrl">
+            <div class="ctrl"><span>压力迭代</span><input type="range" id="ch4-iters" min="1" max="60" step="1" value="24"><span class="val" id="ch4-iters-val">24</span></div>
+          </div>
+          <div class="demo-hint">按住拖动对比。散度视图：红 = 净流出（膨胀户），蓝 = 净流入（被挤户）。</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CH 5 ═══════════════ -->
+  <section class="chapter" id="ch5">
+    <div class="ch-kicker">Chapter 05 · The Whole Machine</div>
+    <div class="ch-head"><div class="ch-num">05</div><h2 class="ch-title">总装：一帧的完整流水线</h2></div>
+    <p class="ch-lede">把前四章的零件全部拧在一起 —— 这就是每帧在 GPU 上发生的事。</p>
+
+    <div class="ch-grid">
+      <div class="ch-text">
+        <div class="pipeline" style="max-width:none">
+          <div class="pipe-step hot"><div class="t">① 外力 splat</div><div class="s">第 3 章</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step hot"><div class="t">② 涡度约束</div><div class="s">第 3 章</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step hot"><div class="t">③ 散度</div><div class="s">第 4 章</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step hot"><div class="t">④ 压力 ×N 迭代</div><div class="s">第 4 章</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step hot"><div class="t">⑤ u ← u − ∇p</div><div class="s">第 4 章</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step hot"><div class="t">⑥ 平流速度</div><div class="s">第 2 章</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step hot"><div class="t">⑦ 平流染料</div><div class="s">第 2 章</div></div>
+        </div>
+
+        <h3 class="sub">为什么是这个顺序</h3>
+        <p><b>力放在最前</b>：玩家的输入必须在本帧就见效，不能等风被搬运稀释之后。<b>投影紧跟在所有"改速度"的步骤之后</b>：涡度约束加的力会重新弄脏账本，所以要把 splat 和涡度都做完，最后统一熨一次。<b>平流放在投影之后</b>：搬运无散度场的误差远小于搬运一个"漏气"的场——先熨平再搬家，风才不会把墨吹出鬼影。这个顺序是 Stam 论文定下的，二十多年几乎没变过。</p>
+
+        <h3 class="sub">成本账本：为什么 60fps 毫无压力</h3>
+        <table class="vs">
+          <thead><tr><th>步骤</th><th>全屏 pass 数</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>外力 splat</td><td>按事件数</td><td>通常 &lt; 5 个，极便宜</td></tr>
+            <tr><td>涡度</td><td>2</td><td>curl + 加力</td></tr>
+            <tr><td>散度</td><td>1</td><td>一次差分</td></tr>
+            <tr><td>压力迭代</td><td>N（20~40）</td><td><b>大头</b>，但每次只是 5 次纹理读取</td></tr>
+            <tr><td>梯度减除</td><td>1</td><td>一次差分</td></tr>
+            <tr><td>平流 ×2</td><td>2</td><td>各一次采样</td></tr>
+          </tbody>
+        </table>
+        <p>每帧约 30~50 次全屏 pass，每次每像素只做几十次浮点运算 —— 在 GPU 上这是毛毛雨。真正的变量是<b>网格分辨率</b>：pass 数不变，但每个 pass 的像素数随分辨率平方增长。所以实战调优第一个动的永远是"模拟分辨率"，而不是删步骤。</p>
+
+        <p>速度场和染料场各自双缓冲（ping-pong），写完一版换一版 —— 和第 1 章说的完全一致：<em>速度场搬运染料，物理规律修正速度场</em>，循环往复。</p>
+
+        <div class="try"><b>试一试：</b>右侧是毕业演示 —— ① 把<b>投影</b>和<b>涡度</b>全关 → 拖几下 → 再逐个打开，感受每一步的分量。② 切到<b>速度场视图</b>：颜色是方向（色相）、亮度是快慢，你能亲眼看见那张"风的表"。③ 切<b>水面法线</b>：流体变成一片有高光、有深浅的水面 —— 这正是 FluidNinja 交给 Unity 渲染的东西，第 7 章讲。</div>
+      </div>
+
+      <aside class="ch-aside">
+        <div class="demo reveal">
+          <div class="demo-head"><span class="live"></span><span class="demo-tag">演示 5-1</span><span class="demo-title">完整求解器 · 每个步骤都可以现场拆掉</span></div>
+          <div class="demo-body"><canvas id="canvas-ch5" class="sim big" aria-label="完整流体求解器"></canvas></div>
+          <div class="demo-ctrl">
+            <label class="switch"><input type="checkbox" id="ch5-proj" checked><span class="track"></span>投影</label>
+            <label class="switch"><input type="checkbox" id="ch5-curl-on" checked><span class="track"></span>涡度</label>
+            <button class="btn" id="ch5-reset">重置</button>
+            <span class="fps" id="ch5-fps">— fps</span>
+          </div>
+          <div class="demo-ctrl">
+            <div class="ctrl">查看
+              <div class="seg" id="ch5-view">
+                <button class="active" data-m="0">染料</button>
+                <button data-m="1">速度场</button>
+                <button data-m="2">散度</button>
+                <button data-m="3">压力</button>
+                <button data-m="4">水面法线</button>
+              </div>
+            </div>
+          </div>
+          <div class="demo-ctrl">
+            <div class="ctrl">预设
+              <div class="seg" id="ch5-preset">
+                <button data-p="smoke">烟</button>
+                <button data-p="ink" class="active">墨</button>
+                <button data-p="water">水</button>
+              </div>
+            </div>
+          </div>
+          <div class="demo-hint">拖动玩耍。试试：投影和涡度全关 → 拖几下 → 再逐个打开。</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CH 6 ═══════════════ -->
+  <section class="chapter" id="ch6">
+    <div class="ch-kicker">Chapter 06 · Self-Driven Fluids</div>
+    <div class="ch-head"><div class="ch-num">06</div><h2 class="ch-title">无中生有：火焰与河流</h2></div>
+    <p class="ch-lede">前五章的流体都要你戳它才动。但 FluidNinja 卖的是活的世界 —— 熔岩自己翻涌、河流自己奔流。秘密不是更玄的数学，而是两台"内置发动机"。</p>
+
+    <div class="ch-grid">
+      <div class="ch-text">
+        <h3 class="sub">发动机一：浮力 —— 火焰为什么自己往上窜</h3>
+        <p>火焰不需要人吹：热空气比冷空气轻，<strong>温度越高，向上的力越强</strong>。实现只要一个 pass：读温度，往速度场的 y 分量加一个正比于温度的力。温度场也<b>不用新建纹理</b>——直接复用染料场，把它的 R 通道当温度用（火焰模式下"颜色"就是"温度"）。</p>
+        <pre class="code" data-lang="GLSL"><span class="cm">// 浮力 shader 的全部：热的地方自动获得向上的速度</span>
+<span class="kw">float</span> T = <span class="fn">texture</span>(uTemperature, vUv).x;  <span class="cm">// 这格的温度</span>
+v.y += buoyancy * T * dt;                   <span class="cm">// 越热升得越快</span>
+<span class="cm">// 摇曳：两个不同频率的 sin 叠加 ≈ 廉价噪声</span>
+<span class="kw">float</span> sway = <span class="fn">sin</span>(vUv.y * <span class="num">9.0</span> + time * <span class="num">2.3</span>) * <span class="num">0.6</span>
+           + <span class="fn">sin</span>(vUv.y * <span class="num">17.0</span> - time * <span class="num">3.4</span>) * <span class="num">0.4</span>;
+v.x += wobble * T * sway * dt;              <span class="cm">// 火苗左右摇的秘密</span></pre>
+        <p>持续燃烧 = 底部几个"火源"每帧 splat 一点点温度（5 行 JS 的 emitter），温度被平流抬着往上走、又被 dissipation 慢慢冷却 —— 火苗"下粗上细、顶端熄灭"的形状是物理自己长出来的。<strong>颜色同样不是画出来的</strong>：温度映射到铁匠都认识的<strong>黑体色带</strong> —— 暗红 → 橙 → 黄 → 白热。</p>
+
+        <div class="try"><b>试一试：</b>右侧火焰没人碰它也在烧。把<b>浮力</b>滑到 0 —— 火苗瘫成一摊热雾（只剩扩散）；拉到 700 —— 火舌窜得又急又高。<b>摇曳</b>调到 0 看看"没有风的火"有多呆。关掉<b>点火</b>再看最后一缕热气如何飘散熄灭。</div>
+      </div>
+
+      <aside class="ch-aside">
+        <div class="demo reveal">
+          <div class="demo-head"><span class="live"></span><span class="demo-tag">演示 6-1</span><span class="demo-title">火焰 · 浮力自驱动 + 黑体色带</span></div>
+          <div class="demo-body"><canvas id="canvas-fire" class="sim" aria-label="火焰演示"></canvas></div>
+          <div class="demo-ctrl">
+            <div class="ctrl"><span>浮力</span><input type="range" id="fire-buoy" min="0" max="700" step="10" value="320"><span class="val" id="fire-buoy-val">320</span></div>
+            <div class="ctrl"><span>摇曳</span><input type="range" id="fire-wobble" min="0" max="160" step="5" value="55"><span class="val" id="fire-wobble-val">55</span></div>
+          </div>
+          <div class="demo-ctrl">
+            <label class="switch on-blue"><input type="checkbox" id="fire-on" checked><span class="track"></span>点火</label>
+          </div>
+          <div class="demo-hint">没人拖它也在烧 —— 温度产生浮力，浮力搬运温度。</div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="ch-grid" style="margin-top:56px">
+      <div class="ch-text">
+        <h3 class="sub">发动机二：持续注入 —— 河流为什么永不停</h3>
+        <p>把第 3 章的 splat 从"点一下"变成"<b>每帧都来</b>"，就得到了河流：<strong>上游边界持续注入向右的速度（inflow），下游持续吸走能量（outflow）</strong>。水从哪来、到哪去，全是两个方向相反的"水龙头"。第 4 章的压力投影在这里兑现它的价值：注入的水必须有处可去，投影把账算平，河流才能恒定流淌而不淤积。</p>
+        <p>再放两块<strong>石头</strong>：圆形区域内速度清零。就这一行处理，加上投影，流体自动学会<strong>绕流</strong> —— 水流贴着石头分开、在背后卷出成串的旋涡（流体力学里的"卡门涡街"，游戏里最漂亮的免费特效之一）。</p>
+        <pre class="code" data-lang="GLSL"><span class="cm">// 河流边界 pass：石头 + 出水口</span>
+<span class="kw">if</span> (在石头内) v = <span class="fn">vec2</span>(<span class="num">0.0</span>);            <span class="cm">// 水过不去 → 只能绕</span>
+<span class="kw">if</span> (vUv.x &gt; 出水口) {
+  v *= <span class="num">1.0</span> - <span class="num">0.88</span> * k * k;         <span class="cm">// 阻尼吸能，防止撞墙反弹</span>
+  <span class="kw">if</span> (v.x &lt; <span class="num">0.0</span>) v.x *= <span class="num">0.4</span>;         <span class="cm">// 出水口不许倒流</span>
+}</pre>
+        <p>这<strong>正是 FluidNinja Live Environment 河流的内核</strong>：模拟网格 + 持续 inflow + 地形障碍（石头换成高度场）+ 投影保证守恒。换个色带就是熔岩，降低速度就是沼气。</p>
+
+        <div class="try"><b>试一试：</b>右侧河流不需要任何人拖动。看示踪的流线<strong>绕过两块石头</strong>、在石头背后卷出旋涡。把<b>流速</b>从 300 拉到 2400 —— 慢速时水流温顺地贴绕，高速时石头背后的涡街狂舞（这就是涡度约束的舞台）。关掉<b>石头</b>对比：没有障碍的河流平得像镜子。切到<b>水面视图</b>：流线变成了粼粼波光。</div>
+
+        <div class="note"><b>外力的三种来源，到此集齐：</b>交互 splat（第 3 章，你的鼠标）、浮力（火焰，温度驱动）、边界注入（河流，持续水龙头）。加上本章，你已经拥有"活的世界"的全部零件 —— FluidNinja 的环境资产无非是把这些零件与 3D 地形、引擎材质缝在一起，那是下一章的主题。</div>
+      </div>
+
+      <aside class="ch-aside">
+        <div class="demo reveal">
+          <div class="demo-head"><span class="live"></span><span class="demo-tag">演示 6-2</span><span class="demo-title">河流 · 持续注入 + 障碍绕流涡街</span></div>
+          <div class="demo-body"><canvas id="canvas-river" class="sim" aria-label="河流演示"></canvas></div>
+          <div class="demo-ctrl">
+            <div class="ctrl"><span>流速</span><input type="range" id="river-speed" min="300" max="2400" step="50" value="1050"><span class="val" id="river-speed-val">1050</span></div>
+            <label class="switch"><input type="checkbox" id="river-ob" checked><span class="track"></span>石头</label>
+          </div>
+          <div class="demo-ctrl">
+            <div class="ctrl">查看
+              <div class="seg" id="river-view">
+                <button class="active" data-m="0">染料示踪</button>
+                <button data-m="4">水面</button>
+                <button data-m="1">速度场</button>
+              </div>
+            </div>
+          </div>
+          <div class="demo-hint">左缘持续进水，右缘出水；两块石头强制绕流。</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══════════════ CH 7 ═══════════════ -->
+  <section class="chapter" id="ch7">
+    <div class="ch-kicker">Chapter 07 · From Math to Product</div>
+    <div class="ch-head"><div class="ch-num">07</div><h2 class="ch-title">从算法到资产：FluidNinja 的工程魔法</h2></div>
+    <p class="ch-lede">第 5 章的演示和 FluidNinja 卖的东西，核心是同一个。差的全是工程化 —— 而工程化正是资产的真正价值。</p>
+
+    <h3 class="sub">魔法一：在小火柴盒上算，投到 IMAX 上放</h3>
+    <p>整条流水线的成本正比于格子数。FluidNinja 的思路：模拟永远在小网格上跑（一两百格的量级），渲染时把结果<strong>双线性放大</strong>到任意高分辨率。放大是"免费"的（采样时顺带插值），而流体本来就没有像素级锐利的细节，所以视觉几乎无损。第 2 章演示里那个"96×96 网格 → 丝滑画面"的开关，就是这件事的微缩版。</p>
+    <div class="figure">
+      <svg viewBox="0 0 760 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="低分辨率模拟高分辨率渲染示意">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#0e6e64"/><stop offset="1" stop-color="#3fd8c5"/>
+          </linearGradient>
+        </defs>
+        <rect x="30" y="45" width="260" height="150" fill="#0a0f18" stroke="#26334a" rx="8"/>
+        <g stroke="#1d2839" stroke-width="2">
+          <path d="M95 45 V195 M160 45 V195 M225 45 V195 M290 45 V195"/>
+          <path d="M30 95 H290 M30 145 H290"/>
+        </g>
+        <circle cx="128" cy="120" r="34" fill="url(#g1)" opacity="0.85"/>
+        <circle cx="193" cy="120" r="22" fill="url(#g1)" opacity="0.6"/>
+        <text x="160" y="228" fill="#5a6b84" font-size="13" text-anchor="middle" font-family="monospace">模拟 · 128×128 · 每帧真正计算的地方</text>
+        <path d="M320 120 H430" stroke="#3fd8c5" stroke-width="2.5" marker-end="url(#arr)"/>
+        <defs><marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#3fd8c5"/></marker></defs>
+        <text x="375" y="100" fill="#8494ab" font-size="12" text-anchor="middle">双线性插值放大</text>
+        <text x="375" y="146" fill="#5a6b84" font-size="11" text-anchor="middle">（采样时免费完成）</text>
+        <rect x="470" y="45" width="260" height="150" fill="#0a0f18" stroke="#26334a" rx="8"/>
+        <g stroke="#141d2b" stroke-width="1">
+          <path d="M502 45 V195 M534 45 V195 M566 45 V195 M598 45 V195 M630 45 V195 M662 45 V195 M694 45 V195"/>
+          <path d="M470 64 H730 M470 83 H730 M470 102 H730 M470 121 H730 M470 140 H730 M470 159 H730 M470 178 H730"/>
+        </g>
+        <ellipse cx="568" cy="120" rx="68" ry="46" fill="url(#g1)" opacity="0.85"/>
+        <ellipse cx="632" cy="120" rx="44" ry="30" fill="url(#g1)" opacity="0.55"/>
+        <text x="600" y="228" fill="#5a6b84" font-size="13" text-anchor="middle" font-family="monospace">渲染 · 任意分辨率 · 屏幕上看到的</text>
+      </svg>
+      <div class="cap">计算量降几个数量级，视觉几乎无损 —— GPU 流体的第一性原理</div>
+    </div>
+
+    <h3 class="sub">魔法二：输出的不是颜色，是材质原料</h3>
+    <p>游戏里的水不能只是一张彩色贴图。FluidNinja 从模拟结果推导出<strong>法线贴图</strong>（密度的梯度 → 表面朝向）、高度、泡沫遮罩等，交给引擎的 PBR 材质：于是有了水面高光、折射扭曲、岸边泡沫。第 5 章演示的"水面法线"视图就是最小实现 —— 用染料梯度算法线再打个方向光。</p>
+
+    <h3 class="sub">魔法三：把 2D 流体"贴"上 3D 世界</h3>
+    <p>FluidNinja 最招牌的能力 —— 河流沿地形流淌 —— 本体其实仍是那张 2D 模拟网格：结果纹理通过<strong>投影器 / 贴花</strong>像投影仪一样打到 3D 地形上，随表面起伏、跟随物体移动。加上"边界持续注入速度"（上游进水、下游出水 —— 第 6 章你已经亲手玩过它的内核），一条永不停的河就成立了 —— 第 4 章的投影保证这些水永远"有处可去"。</p>
+    <div class="figure">
+      <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="2D 模拟投影到 3D 地形示意">
+        <defs>
+          <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3fd8c5" stop-opacity="0.02"/>
+            <stop offset="1" stop-color="#3fd8c5" stop-opacity="0.22"/>
+          </linearGradient>
+          <linearGradient id="river" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#1a9e8f"/><stop offset="1" stop-color="#5fe8d6"/>
+          </linearGradient>
+        </defs>
+        <rect x="70" y="18" width="150" height="86" rx="8" fill="#0d131e" stroke="#26334a"/>
+        <g stroke="#1d2839" stroke-width="1.4">
+          <path d="M107 18 V104 M144 18 V104 M181 18 V104 M70 47 H220 M70 76 H220"/>
+        </g>
+        <path d="M112 61 q14 -13 28 0 t28 0 q8 10 -2 16 q-26 8 -52 0 q-10 -6 -2 -16 z" fill="url(#g1)" opacity="0.9"/>
+        <circle cx="182" cy="70" r="10" fill="url(#g1)" opacity="0.7"/>
+        <text x="145" y="130" fill="#8494ab" font-size="12.5" text-anchor="middle" font-family="monospace">2D 流体模拟（RenderTexture）</text>
+        <rect x="205" y="50" width="34" height="22" fill="#1c2635" stroke="#3a4c6b"/>
+        <circle cx="222" cy="61" r="6" fill="#3fd8c5" opacity="0.9"/>
+        <path d="M255 66 L640 208 L600 214 L236 74 Z" fill="url(#beam)"/>
+        <path d="M236 74 L600 214" stroke="#3fd8c5" stroke-width="1.2" stroke-dasharray="5 5" opacity="0.6"/>
+        <path d="M255 66 L640 208" stroke="#3fd8c5" stroke-width="1.2" stroke-dasharray="5 5" opacity="0.6"/>
+        <text x="430" y="120" fill="#5a6b84" font-size="12" text-anchor="middle" transform="rotate(21 430 120)" font-family="monospace">投影器 / Decal</text>
+        <path d="M60 226 Q150 178 240 196 T430 210 T640 208 T740 200" fill="none" stroke="#3a4c6b" stroke-width="2.5"/>
+        <path d="M60 250 L60 226 M740 250 L740 200" stroke="#1c2635" stroke-width="1"/>
+        <path d="M300 200 Q400 186 500 196 L560 205 Q460 216 380 210 Q340 206 300 200 Z" fill="url(#river)" opacity="0.92"/>
+        <ellipse cx="410" cy="203" rx="26" ry="4" fill="#8ff5e8" opacity="0.5"/>
+        <text x="380" y="242" fill="#5a6b84" font-size="12.5" text-anchor="middle" font-family="monospace">3D 地形 · 2D 结果被"贴"成了一条河</text>
+      </svg>
+      <div class="cap">本质是 2D 模拟 + 投影映射 —— 聪明的维度作弊</div>
+    </div>
+
+    <h3 class="sub">魔法四：世界反过来搅动流体</h3>
+    <p>角色踩水、石头落进河里怎么生效？就是第 3 章的 splat —— 引擎把物理体的位置和速度写回速度场，与你的鼠标拖动<b>完全同一机制</b>。脚步涟漪、船尾迹、鱼群搅水，全是同一行代码的不同参数。</p>
+
+    <h3 class="sub">魔法五：为什么必须 GPU</h3>
+    <p>整条流水线是十几个全屏 pass，每个像素独立算几百次浮点运算 —— 这正是 GPU 的甜点区，百万核心并行下 60fps 毫无压力。同一规模在 CPU 上逐格循环要慢上百倍。这也是为什么这类资产在你按下 Play 之前毫无动静，按下之后整个世界活了。</p>
+  </section>
+
+  <!-- ═══════════════ CH 8 ═══════════════ -->
+  <section class="chapter" id="ch8">
+    <div class="ch-kicker">Chapter 08 · Take It Home</div>
+    <div class="ch-head"><div class="ch-num">08</div><h2 class="ch-title">带走它</h2></div>
+    <p class="ch-lede">把整篇文章压缩成一段伪代码 + 一张书单。</p>
+
+    <pre class="code" data-lang="Pseudo · 一帧"><span class="kw">每一帧</span> (dt):
+  <span class="num">0</span>. 自驱动: 火焰浮力 / 河流 inflow（可无）                    <span class="cm">// 第 6 章</span>
+  <span class="num">1</span>. 外力:   把交互/风/物理体 <span class="fn">splat</span> 进速度场与染料场      <span class="cm">// 第 3 章</span>
+  <span class="num">2</span>. 涡度:   curl → 沿 ∇|ω| 给旋涡补力                          <span class="cm">// 第 3 章</span>
+  <span class="num">3</span>. 散度:   div = ∇·u，给每个格子记账                          <span class="cm">// 第 4 章</span>
+  <span class="num">4</span>. 压力:   p ← 上帧p×<span class="num">0.8</span>; Jacobi 迭代 N 次: p = (Σ邻居 − div)/<span class="num">4</span>  <span class="cm">// 第 4 章</span>
+  <span class="num">5</span>. 投影:   u ← u − ∇p  (账平了，不可压缩)                     <span class="cm">// 第 4 章</span>
+  <span class="num">6</span>. 平流:   速度场、染料场各自: 新值 = 旧场(位置 − dt·u)       <span class="cm">// 第 2 章</span>
+  <span class="num">7</span>. 输出:   染料→颜色 / 梯度→法线 → 交给引擎材质               <span class="cm">// 第 6 章</span></pre>
+
+    <p>本页所有演示共用同一个不到 500 行的 <code>FluidSim</code> 类 —— 换句话说，读完这一页，你已经拥有了一个迷你 FluidNinja。想继续深挖，按顺序读这些：</p>
+    <ul class="list refs">
+      <li><strong>Jos Stam, "Stable Fluids"</strong>（SIGGRAPH 1999）—— 一切的起点；他的 GDC 2003 讲义 <em>"Real-Time Fluid Dynamics for Games"</em> 更通俗，带免费示例代码。</li>
+      <li><strong>GPU Gems 第 38 章 "Fast Fluid Dynamics Simulation on the GPU"</strong>（Mark Harris）—— 把 Stable Fluids 搬上 GPU 的奠基文章，本文第 4 章的祖师爷。</li>
+      <li><strong>Keijiro/StableFluids</strong>（GitHub）—— Unity 里最干净的 Stable Fluids 参考实现，compute shader 版。</li>
+      <li><strong>Pavel Dobryakov "WebGL Fluid Simulation"</strong> —— 著名网页流体 demo，本页演示的同源开源实现，代码极适合对照学习。</li>
+      <li><strong>FluidNinja 官方文档 / Asset Store 页</strong> —— 看工程化能力清单（Live Environment 的河流、熔岩、沼气预设等）。</li>
+    </ul>
+
+    <p>最后回到开头那个问题：FluidNinja 凭什么？现在你可以回答了 —— 凭一个 1999 年的无条件稳定平流 trick、一个让账算平的熨斗、一个给旋涡续命的补丁，再加十年把数学变成生产工具的工程功夫。<strong>魔法拆开来，每一步都是可以学会的。</strong></p>
+  </section>
+
+  <!-- ═══════════════ 附录 · 算法图鉴 ═══════════════ -->
+  <section class="chapter" id="appendix">
+    <div class="ch-kicker">Appendix · Algorithm Compendium</div>
+    <div class="ch-head"><div class="ch-num" style="-webkit-text-stroke-color:var(--line-strong)">A</div><h2 class="ch-title">算法图鉴 · 15 个零件</h2></div>
+    <p class="ap-lede">前面是按时间顺序讲的课，这里是按零件拆的速查手册。每张卡片：一张图 → 一段人话 → 一行公式 → 几行真的在跑的代码 → 去哪个演示亲手摸。</p>
+
+    <h3 class="algo-group">第一组 · 表示 <span class="gno">流体住在哪</span></h3>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A1</span>
+        <div>
+          <h4>欧拉网格 · 速度场<span class="algo-en">Eulerian Grid</span></h4>
+          <p class="algo-essence">不追踪每滴水，每个格子只记一缕"风"</p>
+        </div>
+        <span class="algo-stage">地基</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs><marker id="a1m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#3fd8c5"/></marker></defs>
+            <g stroke="#1d2839" stroke-width="1.5">
+              <path d="M60 15 V175 M120 15 V175 M180 15 V175 M240 15 V175"/>
+              <path d="M15 55 H285 M15 95 H285 M15 135 H285"/>
+            </g>
+            <rect x="120" y="55" width="60" height="40" fill="rgba(63,216,197,0.09)" stroke="#3fd8c5" stroke-width="1.5"/>
+            <line x1="145" y1="75" x2="173" y2="65" stroke="#3fd8c5" stroke-width="2" marker-end="url(#a1m)"/>
+            <line x1="38" y1="35" x2="80" y2="35" stroke="#3fd8c5" stroke-width="1.6" opacity="0.75" marker-end="url(#a1m)"/>
+            <line x1="205" y1="115" x2="235" y2="128" stroke="#3fd8c5" stroke-width="1.6" opacity="0.75" marker-end="url(#a1m)"/>
+            <line x1="38" y1="115" x2="60" y2="98" stroke="#3fd8c5" stroke-width="1.6" opacity="0.75" marker-end="url(#a1m)"/>
+            <line x1="205" y1="35" x2="222" y2="57" stroke="#3fd8c5" stroke-width="1.6" opacity="0.75" marker-end="url(#a1m)"/>
+            <text x="150" y="105" fill="#3fd8c5" font-size="11" text-anchor="middle" font-family="monospace">u = (vx, vy)</text>
+            <text x="150" y="162" fill="#5a6b84" font-size="10.5" text-anchor="middle">每个格子存一个速度向量 —— 这张表就是流体的"户口本"</text>
+          </svg>
+          <div class="fig-cap">粒子来了又走，场永远在</div>
+        </div>
+        <div class="algo-text">
+          <p>把空间切成网格，每个格子记录<strong>此刻流过这个位置的速度向量</strong>。整张表叫速度场（像天气预报的风场图）；烟、颜色另存一张染料场。Navier-Stokes 方程的四个项里，游戏直接把<b>粘性项扔掉</b>——因为接下来的插值会免费送你一点粘性（见 A6）。</p>
+          <a class="algo-link" href="#ch1">→ 去演示 1-1 切到箭头视图，亲眼看这张表</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>完整的动量方程还有重力项 ρg，但均匀重力对不可压缩流的作用会被压力投影完全吸收（水里的水不会被自己压沉），所以游戏里通常也一并省略，只在浮力相关的烟/火效果里以温度差的形式加回来。</p>
+            <p>格子里存的 u 是"格子/秒"单位的速度。全场分辨率 128×128 时，一格 ≈ 屏幕的 1/128 —— 数值动辄几十上百，这是后面 splat 力系数要乘几千的原因。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A2</span>
+        <div>
+          <h4>Ping-Pong 双缓冲<span class="algo-en">Ping-Pong Buffers</span></h4>
+          <p class="algo-essence">一张读、一张写，写完一帧就交换</p>
+        </div>
+        <span class="algo-stage">幕后机制</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs><marker id="a2m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8494ab"/></marker></defs>
+            <rect x="30" y="45" width="100" height="70" rx="10" fill="rgba(63,216,197,0.07)" stroke="#3fd8c5" stroke-width="1.5"/>
+            <text x="80" y="75" fill="#3fd8c5" font-size="12.5" text-anchor="middle" font-family="monospace">纹理 A</text>
+            <text x="80" y="95" fill="#5a6b84" font-size="11" text-anchor="middle">本帧读</text>
+            <rect x="170" y="45" width="100" height="70" rx="10" fill="rgba(255,158,100,0.06)" stroke="#ff9e64" stroke-width="1.5"/>
+            <text x="220" y="75" fill="#ff9e64" font-size="12.5" text-anchor="middle" font-family="monospace">纹理 B</text>
+            <text x="220" y="95" fill="#5a6b84" font-size="11" text-anchor="middle">本帧写</text>
+            <path d="M136 65 H164" stroke="#8494ab" stroke-width="1.6" marker-end="url(#a2m)"/>
+            <path d="M164 96 H136" stroke="#8494ab" stroke-width="1.6" marker-end="url(#a2m)"/>
+            <text x="150" y="140" fill="#8494ab" font-size="11" text-anchor="middle">帧末 swap() 交换身份</text>
+            <text x="150" y="164" fill="#5a6b84" font-size="10.5" text-anchor="middle">GPU 上几千个线程并行，不能边读边写同一张纹理</text>
+          </svg>
+          <div class="fig-cap">每张场（速度/染料/压力）都是一对乒乓球拍</div>
+        </div>
+        <div class="algo-text">
+          <p>GPU 的 fragment shader 是几千个线程同时跑的，谁也不知道别人写到哪了——所以<b>绝不能边读边写同一张纹理</b>。解法土但有效：每张场准备两份，本帧从"读"里采样、渲染进"写"，帧末交换。页面源码里所有 <code>swap()</code> 调用就是这对球拍在击掌。</p>
+          <a class="algo-link" href="#ch5">→ 去 5-1 完整求解器看这条流水线运转</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>本页的实现细节：速度用 <code>RG16F</code>（两个半精度浮点正好存 vx、vy），染料用 <code>RGBA16F</code>（彩色），压力/散度/涡度用 <code>R16F</code>（单通道就够）——存什么 field 就开什么格式，显存一点不浪费。</p>
+            <p>半精度（16 位浮点）是刻意选择：它可过滤、可渲染、带宽减半，而流体的数值精度要求完全在它的表示范围内。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <h3 class="algo-group">第二组 · 驱动与搬运 <span class="gno">力怎么进来，东西怎么走</span></h3>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A3</span>
+        <div>
+          <h4>Splat · 外力注入<span class="algo-en">Gaussian Splat</span></h4>
+          <p class="algo-essence">高斯衰减地往场里"拍"一团力</p>
+        </div>
+        <span class="algo-stage">驱动</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="a3g" cx="0.5" cy="0.5" r="0.5">
+                <stop offset="0" stop-color="#3fd8c5" stop-opacity="0.85"/>
+                <stop offset="0.4" stop-color="#3fd8c5" stop-opacity="0.35"/>
+                <stop offset="1" stop-color="#3fd8c5" stop-opacity="0.02"/>
+              </radialGradient>
+            </defs>
+            <circle cx="95" cy="95" r="72" fill="url(#a3g)"/>
+            <circle cx="95" cy="95" r="46" fill="none" stroke="#3fd8c5" stroke-opacity="0.35" stroke-dasharray="3 4"/>
+            <circle cx="95" cy="95" r="18" fill="none" stroke="#3fd8c5" stroke-opacity="0.6" stroke-dasharray="3 4"/>
+            <text x="95" y="178" fill="#5a6b84" font-size="10.5" text-anchor="middle">俯视：力的分布</text>
+            <line x1="192" y1="150" x2="282" y2="150" stroke="#26334a" stroke-width="1"/>
+            <line x1="192" y1="150" x2="192" y2="22" stroke="#26334a" stroke-width="1"/>
+            <path d="M192 35 C 218 38, 232 52, 238 72 C 244 92, 248 118, 252 150" fill="none" stroke="#ff9e64" stroke-width="2"/>
+            <text x="238" y="18" fill="#8494ab" font-size="10.5" text-anchor="middle">exp(−d²/r²)</text>
+            <text x="237" y="166" fill="#5a6b84" font-size="10.5" text-anchor="middle">侧视：高斯钟形</text>
+          </svg>
+          <div class="fig-cap">中心力最大，距离越远指数衰减为零</div>
+        </div>
+        <div class="algo-text">
+          <p>鼠标划过、爆炸、角色落水——全是同一件事：在指定位置给速度场<b>加</b>一团力，中心强、远处指数归零，像手指戳水面。FluidNinja 里船尾迹、鱼群搅水，本质就是这个函数，只是力 F 换成了物理体的速度。</p>
+          <div class="formula">u(x) += F · exp( −|x − p|² / r² )</div>
+          <pre class="code"><span class="kw">vec3</span> splat = <span class="fn">exp</span>(-<span class="fn">dot</span>(p, p) / radius) * color;  <span class="cm">// color = (力x, 力y, 0)</span>
+result = <span class="fn">texture</span>(uTarget, vUv) + splat;</pre>
+          <a class="algo-link" href="#ch3">→ 去演示 3-1 拖一下，就是在做 splat</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>radius 参数的含义是<b>平方</b>半径：代码里 exp(−dot(p,p)/radius) 的有效半径其实是 √radius。本页速度 splat 用 0.0025（有效半径约 5% 屏宽），染料 splat 故意再除以 2.6 —— 墨团比力团小，视觉更"笔触"。</p>
+            <p>连续拖动时每次 pointermove 都 splat 一次，两帧间隔的位移就是力向量 —— 所以"快速甩"注入的力天然比"慢慢蹭"大，无需额外处理。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A4</span>
+        <div>
+          <h4>半拉格朗日平流<span class="algo-en">Semi-Lagrangian Advection</span></h4>
+          <p class="algo-essence">沿着风倒退一步，去上游把值取回来</p>
+        </div>
+        <span class="algo-stage">灵魂</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="a4m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#3fd8c5"/></marker>
+              <marker id="a4o" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ff9e64"/></marker>
+            </defs>
+            <g stroke="#1d2839" stroke-width="1.5">
+              <path d="M55 20 V170 M115 20 V170 M175 20 V170 M235 20 V170"/>
+              <path d="M25 50 H275 M25 90 H275 M25 130 H275"/>
+            </g>
+            <rect x="175" y="50" width="60" height="40" fill="rgba(63,216,197,0.12)" stroke="#3fd8c5" stroke-width="1.5"/>
+            <text x="205" y="75" fill="#3fd8c5" font-size="10.5" text-anchor="middle">我现在在这</text>
+            <rect x="55" y="90" width="60" height="40" fill="rgba(255,158,100,0.1)" stroke="#ff9e64" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <text x="85" y="115" fill="#ff9e64" font-size="10.5" text-anchor="middle">Δt 前在这</text>
+            <line x1="205" y1="70" x2="252" y2="34" stroke="#3fd8c5" stroke-width="2" marker-end="url(#a4m)"/>
+            <text x="252" y="26" fill="#3fd8c5" font-size="11" font-family="monospace">v</text>
+            <line x1="200" y1="76" x2="120" y2="122" stroke="#ff9e64" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#a4o)"/>
+            <text x="152" y="108" fill="#ff9e64" font-size="11" font-family="monospace">− Δt·v 回溯</text>
+            <text x="150" y="186" fill="#5a6b84" font-size="10.5" text-anchor="middle">新值 = 旧场在上游位置的采样</text>
+          </svg>
+          <div class="fig-cap">不问"我去哪"，问"谁流进了我"</div>
+        </div>
+        <div class="algo-text">
+          <p>直觉做法"把每格的值按速度推走"（前向欧拉）在网格上不稳定。Stam 的翻转：问<b>"此刻在我这格的空气，上一刻在哪？"</b>——沿速度倒退 Δt，去那个位置采样旧值。因为永远只是插值采样，结果有界，<b>无条件稳定、永不爆炸</b>——这就是 Stable Fluids 的 Stable。</p>
+          <div class="formula">φ(x, t+Δt) = φ( x − Δt·u(x), t )</div>
+          <pre class="code"><span class="kw">vec2</span> coord = vUv - dt * <span class="fn">texture</span>(uVelocity, vUv).xy * texelSize;
+<span class="kw">vec4</span> result = <span class="fn">texture</span>(uSource, coord);  <span class="cm">// 去上游取值</span></pre>
+          <a class="algo-link" href="#ch2">→ 去演示 2-1 勾"反转平流方向"，看墨倒流（错误的前向语义）</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>半拉格朗日只有<b>一阶精度</b>：回溯落点算得准，但取值只做了双线性插值，误差与格子尺寸成正比。追求更锐利的画面可以用 <b>MacCormack</b> 方案：先回溯一遍、再前向一遍、用两次结果的差修正 —— 代价是三次采样，换来接近二阶的精度。商业资产普遍在这一步做文章。</p>
+            <p>回溯的"倒退一步"用的速度是<b>当前格</b>的速度（不是上游的），这叫一阶显式；用"当前格与上游格速度的平均"（中点法）能显著减少大步长时的弯曲误差。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A5</span>
+        <div>
+          <h4>双线性插值<span class="algo-en">Bilinear Interpolation</span></h4>
+          <p class="algo-essence">落点不在格子上？找四个邻居按距离加权</p>
+        </div>
+        <span class="algo-stage">搬运 · 还有第二身份</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#1d2839" stroke-width="2">
+              <rect x="60" y="35" width="180" height="120" fill="none"/>
+              <line x1="150" y1="35" x2="150" y2="155" stroke-dasharray="4 4"/>
+              <line x1="60" y1="95" x2="240" y2="95" stroke-dasharray="4 4"/>
+            </g>
+            <circle cx="60" cy="35" r="4" fill="#3fd8c5"/><text x="52" y="28" fill="#3fd8c5" font-size="11" text-anchor="end" font-family="monospace">v00</text>
+            <circle cx="240" cy="35" r="4" fill="#3fd8c5"/><text x="248" y="28" fill="#3fd8c5" font-size="11" font-family="monospace">v10</text>
+            <circle cx="60" cy="155" r="4" fill="#3fd8c5"/><text x="52" y="170" fill="#3fd8c5" font-size="11" text-anchor="end" font-family="monospace">v01</text>
+            <circle cx="240" cy="155" r="4" fill="#3fd8c5"/><text x="248" y="170" fill="#3fd8c5" font-size="11" font-family="monospace">v11</text>
+            <circle cx="185" cy="122" r="6" fill="#ff9e64"/>
+            <text x="185" y="145" fill="#ff9e64" font-size="11.5" text-anchor="middle" font-weight="bold">P</text>
+            <line x1="66" y1="41" x2="177" y2="114" stroke="#ff9e64" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"/>
+            <line x1="234" y1="41" x2="192" y2="114" stroke="#ff9e64" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"/>
+            <line x1="66" y1="149" x2="177" y2="127" stroke="#ff9e64" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"/>
+            <line x1="234" y1="149" x2="192" y2="127" stroke="#ff9e64" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"/>
+            <text x="150" y="184" fill="#5a6b84" font-size="10.5" text-anchor="middle">v(P) = 按到四角的距离加权平均</text>
+          </svg>
+          <div class="fig-cap">texture() 的 LINEAR 过滤自动完成</div>
+        </div>
+        <div class="algo-text">
+          <p>平流回溯的落点几乎不会正好落在格点上，取值就找相邻 4 格按距离加权平均。它还有个<b>第二身份</b>：FluidNinja "低清模拟、高清渲染"的魔法就是它——128×128 的模拟结果，显示时在每个像素位置插值，免费放大到 4K，而流体本来就没有像素级锐利的细节，视觉几乎无损。</p>
+          <div class="formula">v = Σ wᵢ·vᵢ&nbsp;&nbsp;(wᵢ 随距离衰减，Σwᵢ = 1)</div>
+          <a class="algo-link" href="#ch2">→ 去演示 2-1 勾"显示模拟网格"，看清 96×96 → 丝滑的差距</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>把权重写开就是：<code>v = (1−a)(1−b)·v00 + a(1−b)·v10 + (1−a)b·v01 + ab·v11</code>，其中 a、b 是落点到格线的比例。四个权重加起来恒等于 1 —— 这就是它"不凭空造质量"的原因（对比前向 splat 的权重和 ≠ 1）。</p>
+            <p>放大画面时硬件沿用的还是这四个权重，GPU 纹理单元（sampler）一个周期内完成，所以说"免费"。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A6</span>
+        <div>
+          <h4>数值耗散<span class="algo-en">Numerical Dissipation</span></h4>
+          <p class="algo-essence">插值 = 轻微的模糊，每帧都在磨掉小旋涡</p>
+        </div>
+        <span class="algo-stage enemy">要认识的敌人</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs><marker id="a6m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8494ab"/></marker></defs>
+            <rect x="28" y="50" width="80" height="90" fill="rgba(63,216,197,0.55)" stroke="#3fd8c5"/>
+            <text x="68" y="42" fill="#3fd8c5" font-size="11" text-anchor="middle">第 0 秒：棱角分明</text>
+            <path d="M192 62 Q 172 52, 185 66 Q 172 80, 192 78 Z" fill="rgba(63,216,197,0.3)" stroke="#3fd8c5" stroke-opacity="0.6"/>
+            <rect x="192" y="62" width="52" height="66" rx="18" fill="rgba(63,216,197,0.28)" stroke="#3fd8c5" stroke-opacity="0.55"/>
+            <text x="218" y="42" fill="#8494ab" font-size="11" text-anchor="middle">几秒后：圆了、糊了</text>
+            <line x1="118" y1="95" x2="178" y2="95" stroke="#8494ab" stroke-width="1.8" marker-end="url(#a6m)"/>
+            <text x="148" y="85" fill="#5a6b84" font-size="10" text-anchor="middle">每帧 ×轻微模糊</text>
+            <text x="150" y="176" fill="#5a6b84" font-size="10.5" text-anchor="middle">细节（尤其小旋涡）被一点点"摩擦"掉 → 流体像蜂蜜</text>
+          </svg>
+          <div class="fig-cap">A4 稳定性的代价 —— A9 就是来救它的</div>
+        </div>
+        <div class="algo-text">
+          <p>这不是 bug 而是格点方法的固有副作用：每次插值都丢一点点小尺度信息。宏观表现是流体越流越"糊"、小旋涡无声消失。别沮丧——它顺便免费提供了粘性（真解里最贵的一项），而且下一张卡片的算法专门收拾它。</p>
+          <a class="algo-link" href="#ch2">→ 去演示 2-1 投放染料方块，看直角几分钟内变圆</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>耗散强度和分辨率<b>直接挂钩</b>：同一笔细节，在 96×96 网格里占 3 个格子，在 256×256 里占 8 个格子 —— 被同样次数的插值模糊后，高分辨率的细节"相对更耐磨"。这就是为什么专业流体模拟提升观感的第一件事永远是加分辨率，而不是调参数。</p>
+            <p>数学上，双线性平均恰好等价于给场乘上一个微小的扩散算子 —— 所以说"粘性项被免费送了"并非修辞，是严格的等价。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A7</span>
+        <div>
+          <h4>衰减<span class="algo-en">Dissipation</span></h4>
+          <p class="algo-essence">每帧除以 (1 + d·Δt)，让流体"老去"</p>
+        </div>
+        <span class="algo-stage">搬运 · 调味料</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <line x1="40" y1="160" x2="280" y2="160" stroke="#26334a" stroke-width="1"/>
+            <line x1="40" y1="160" x2="40" y2="20" stroke="#26334a" stroke-width="1"/>
+            <line x1="40" y1="40" x2="280" y2="40" stroke="#5a6b84" stroke-width="1.6" stroke-dasharray="6 4"/>
+            <text x="270" y="32" fill="#8494ab" font-size="10.5" text-anchor="end">d = 0 墨（永存）</text>
+            <path d="M40 60 C 110 62, 160 105, 200 135 C 230 152, 255 158, 280 158" fill="none" stroke="#3fd8c5" stroke-width="2"/>
+            <text x="270" y="150" fill="#3fd8c5" font-size="10.5" text-anchor="end">d 大 烟（速散）</text>
+            <text x="160" y="182" fill="#5a6b84" font-size="10.5" text-anchor="middle">时间</text>
+          </svg>
+          <div class="fig-cap">烟用大 d，墨用 0，水用极小 d</div>
+        </div>
+        <div class="algo-text">
+          <p>速度和染料若永不消减会越积越乱。最简单的"老去"：每帧除以一个略大于 1 的数。它不是物理，是美术参数——<b>烟、墨、水的气质差异，一半来自这一个系数</b>。</p>
+          <div class="formula">φ ← φ / ( 1 + d·Δt )</div>
+          <pre class="code"><span class="kw">float</span> decay = <span class="num">1.0</span> + dissipation * dt;
+fragColor = texture(uSource, coord) / decay;</pre>
+          <a class="algo-link" href="#ch5">→ 去演示 5-1 切换"烟 / 墨 / 水"预设对比</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>换算成半衰期更直观：d = 0.6 时亮度减半约需 1.1 秒（烟感），d = 0 时永不衰减（墨），速度场的 d 通常比染料小 —— 风停了惯性还在，墨才有"余韵"。</p>
+            <p>用除法 (1+d·Δt) 而不是乘法 (1−d·Δt) 是刻意的：除法形式在任意 Δt 下都不会把值变成负数，又一个稳定性小设计。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <h3 class="algo-group">第三组 · 让流体像流体 <span class="gno">本组是灵魂</span></h3>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A8</span>
+        <div>
+          <h4>涡度<span class="algo-en">Curl / Vorticity</span></h4>
+          <p class="algo-essence">放一根小桨轮，它转不转、往哪转</p>
+        </div>
+        <span class="algo-stage">测量</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="a8m" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#3fd8c5"/></marker>
+              <marker id="a8o" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#ff9e64"/></marker>
+            </defs>
+            <g fill="none" stroke="#3fd8c5" stroke-width="1.6" opacity="0.85">
+              <path d="M88 45 a 42 42 0 1 1 -0.1 0" marker-end="url(#a8m)"/>
+              <path d="M68 60 a 26 26 0 1 1 -0.1 0" marker-end="url(#a8m)"/>
+              <path d="M56 84 a 12 12 0 1 1 -0.1 0" marker-end="url(#a8m)"/>
+            </g>
+            <circle cx="88" cy="88" r="4" fill="#3fd8c5"/>
+            <text x="88" y="152" fill="#3fd8c5" font-size="12" text-anchor="middle" font-family="monospace">ω &gt; 0 逆时针</text>
+            <g fill="none" stroke="#ff9e64" stroke-width="1.6" opacity="0.85">
+              <path d="M222 45 a 42 42 0 1 0 0.1 0" marker-end="url(#a8o)"/>
+              <path d="M242 60 a 26 26 0 1 0 0.1 0" marker-end="url(#a8o)"/>
+              <path d="M254 84 a 12 12 0 1 0 0.1 0" marker-end="url(#a8o)"/>
+            </g>
+            <circle cx="222" cy="88" r="4" fill="#ff9e64"/>
+            <text x="222" y="152" fill="#ff9e64" font-size="12" text-anchor="middle" font-family="monospace">ω &lt; 0 顺时针</text>
+            <text x="150" y="176" fill="#5a6b84" font-size="10.5" text-anchor="middle">每个格子一个数：这里转得多快、往哪边转</text>
+          </svg>
+          <div class="fig-cap">对邻居速度做差分就得到它</div>
+        </div>
+        <div class="algo-text">
+          <p>衡量一个格子"旋转强度"的标量：逆时针为正、顺时针为负、静止为零。它本身只是个测量，但它是下一张卡片（涡度约束）的输入，也是第 5 章速度视图里那些漂亮旋涡的数学实体。</p>
+          <div class="formula">ω = ∂u_y/∂x − ∂u_x/∂y</div>
+          <pre class="code"><span class="kw">float</span> L = <span class="fn">texture</span>(uVelocity, 左).y;
+<span class="kw">float</span> R = <span class="fn">texture</span>(uVelocity, 右).y;
+<span class="kw">float</span> T = <span class="fn">texture</span>(uVelocity, 上).x;
+<span class="kw">float</span> B = <span class="fn">texture</span>(uVelocity, 下).x;
+<span class="kw">float</span> vorticity = R - L - T + B;</pre>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>2D 涡度的物理意义：它等于一小片流体<b>角速度的两倍</b>。ω = 10 意味着这片水每秒转 5 弧度 —— 约一圈多。把它想成"每格的转速表"，第 5 章速度视图里那些色环就是它的可视化表亲。</p>
+            <p>注意代码取的是"邻居的<b>垂直</b>分量算左右差、<b>水平</b>分量算上下差"—— 旋转本来就该由"交叉方向"的速度差定义，直觉上：右边的风往上吹、左边的风往下吹，中间必然在逆时针转。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A9</span>
+        <div>
+          <h4>涡度约束<span class="algo-en">Vorticity Confinement</span></h4>
+          <p class="algo-essence">给每个快被磨平的旋涡配一个"扶它的教练"</p>
+        </div>
+        <span class="algo-stage">反耗散补丁</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="a9m" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#3fd8c5"/></marker>
+              <marker id="a9o" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ff9e64"/></marker>
+            </defs>
+            <g fill="none" stroke="#3fd8c5" stroke-width="1.5" opacity="0.7">
+              <path d="M150 45 a 44 44 0 1 1 -0.1 0" marker-end="url(#a9m)"/>
+              <path d="M130 62 a 26 26 0 1 1 -0.1 0" marker-end="url(#a9m)"/>
+            </g>
+            <circle cx="150" cy="92" r="4" fill="#3fd8c5"/>
+            <line x1="46" y1="92" x2="96" y2="92" stroke="#ff9e64" stroke-width="2.2" marker-end="url(#a9o)"/>
+            <line x1="254" y1="92" x2="204" y2="92" stroke="#ff9e64" stroke-width="2.2" marker-end="url(#a9o)"/>
+            <line x1="150" y1="26" x2="150" y2="52" stroke="#ff9e64" stroke-width="2.2" marker-end="url(#a9o)"/>
+            <line x1="150" y1="158" x2="150" y2="132" stroke="#ff9e64" stroke-width="2.2" marker-end="url(#a9o)"/>
+            <text x="46" y="82" fill="#ff9e64" font-size="10.5" text-anchor="middle" font-family="monospace">F</text>
+            <text x="254" y="82" fill="#ff9e64" font-size="10.5" text-anchor="middle" font-family="monospace">F</text>
+            <text x="150" y="176" fill="#5a6b84" font-size="10.5" text-anchor="middle">∇|ω| 指向更强的旋涡 → 沿它补一把与旋转同向的力</text>
+          </svg>
+          <div class="fig-cap">数值耗散偷走的能量，这里主动还回去</div>
+        </div>
+        <div class="algo-text">
+          <p>先算涡度 ω 的梯度——它指向"附近哪里转得更凶"；然后沿这个方向补一把与旋转方向一致的力，<b>人为把能量还给快被耗散吃掉的涡</b>。电影游戏界的经典补丁（Fedkiw 1996）。ε 就是你拉的"涡度强度"滑块：0 = 蜂蜜，40 = 湍流。</p>
+          <div class="formula">F = ε · ( ∇|ω| × ω )&nbsp;&nbsp;→&nbsp;&nbsp;u ← u + Δt·F</div>
+          <pre class="code"><span class="kw">vec2</span> force = <span class="num">0.5</span> * <span class="fn">vec2</span>(<span class="fn">abs</span>(T) - <span class="fn">abs</span>(B), <span class="fn">abs</span>(R) - <span class="fn">abs</span>(L));
+force /= <span class="fn">length</span>(force) + <span class="num">1e-4</span>;      <span class="cm">// 归一化：只定方向</span>
+force *= curl * C;                    <span class="cm">// 乘强度和本地涡度</span>
+velocity += force * dt;               <span class="cm">// 还给旋涡</span></pre>
+          <a class="algo-link" href="#ch3">→ 去演示 3-1 把滑块从 0 拉到 40 对比</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>代码里有一行神秘的 <code>force.y *= -1.0;</code>：∇|ω| × ω 的叉积在"y 向上"的数学坐标系里方向正确，而屏幕/纹理坐标系 y 向下 —— 不翻转的话所有旋涡会被<b>反向</b>加速，越转越死。坐标系约定是图形代码里最常见的隐形坑。</p>
+            <p>ε 并非越大越好：它还给系统的能量是"凭空"的，拉太高会看到旋涡违反直觉地自我增强、出现病态抖动。20~35 是安全区。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A10</span>
+        <div>
+          <h4>散度<span class="algo-en">Divergence</span></h4>
+          <p class="algo-essence">给每个格子记账：净流出必须为零</p>
+        </div>
+        <span class="algo-stage">记账</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="a10r" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#ff7a66"/></marker>
+              <marker id="a10b" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#7aa2f7"/></marker>
+              <marker id="a10g" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#8494ab"/></marker>
+            </defs>
+            <rect x="20" y="35" width="76" height="76" rx="8" fill="rgba(255,122,102,0.08)" stroke="#ff7a66" stroke-width="1.5"/>
+            <line x1="58" y1="73" x2="96" y2="46" stroke="#ff7a66" stroke-width="1.8" marker-end="url(#a10r)"/>
+            <line x1="58" y1="73" x2="96" y2="73" stroke="#ff7a66" stroke-width="1.8" marker-end="url(#a10r)"/>
+            <line x1="58" y1="73" x2="96" y2="100" stroke="#ff7a66" stroke-width="1.8" marker-end="url(#a10r)"/>
+            <line x1="20" y1="73" x2="44" y2="73" stroke="#8494ab" stroke-width="1.8" marker-end="url(#a10g)"/>
+            <text x="58" y="132" fill="#ff7a66" font-size="11" text-anchor="middle" font-family="monospace">div &gt; 0</text>
+            <text x="58" y="146" fill="#5a6b84" font-size="9.5" text-anchor="middle">源 · 膨胀户</text>
+            <rect x="112" y="35" width="76" height="76" rx="8" fill="rgba(122,162,247,0.08)" stroke="#7aa2f7" stroke-width="1.5"/>
+            <line x1="150" y1="73" x2="188" y2="73" stroke="#8494ab" stroke-width="1.8" marker-end="url(#a10g)"/>
+            <line x1="112" y1="46" x2="146" y2="70" stroke="#7aa2f7" stroke-width="1.8" marker-end="url(#a10b)"/>
+            <line x1="112" y1="100" x2="146" y2="76" stroke="#7aa2f7" stroke-width="1.8" marker-end="url(#a10b)"/>
+            <text x="150" y="132" fill="#7aa2f7" font-size="11" text-anchor="middle" font-family="monospace">div &lt; 0</text>
+            <text x="150" y="146" fill="#5a6b84" font-size="9.5" text-anchor="middle">汇 · 被挤户</text>
+            <rect x="204" y="35" width="76" height="76" rx="8" fill="rgba(132,148,171,0.06)" stroke="#8494ab" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <line x1="242" y1="73" x2="280" y2="73" stroke="#8494ab" stroke-width="1.8" marker-end="url(#a10g)"/>
+            <line x1="204" y1="73" x2="240" y2="73" stroke="#8494ab" stroke-width="1.8" marker-end="url(#a10g)"/>
+            <line x1="242" y1="60" x2="242" y2="44" stroke="#8494ab" stroke-width="1.8" marker-end="url(#a10g)"/>
+            <line x1="242" y1="86" x2="242" y2="102" stroke="#8494ab" stroke-width="1.8" marker-end="url(#a10g)"/>
+            <text x="242" y="132" fill="#3fd8c5" font-size="11" text-anchor="middle" font-family="monospace">div = 0 ✓</text>
+            <text x="242" y="146" fill="#5a6b84" font-size="9.5" text-anchor="middle">账平了 · 合法</text>
+            <text x="150" y="172" fill="#5a6b84" font-size="10.5" text-anchor="middle">水不可压缩 ⇒ 每个格子"流入 = 流出"</text>
+          </svg>
+          <div class="fig-cap">三种格子：源、汇、合法</div>
+        </div>
+        <div class="algo-text">
+          <p>把格子想成账本：四面八方的流入减流出必须恰好等于零。你随手"拍"出来、被平流搬过一圈的速度场，几乎不可能刚好满足——于是需要接下来两张卡片把它熨平。（代码里贴边格子的法向速度会取反：墙不可穿透，撞墙的账也要算对。）</p>
+          <div class="formula">∇·u = 0&nbsp;&nbsp;（不可压缩条件）</div>
+          <pre class="code"><span class="kw">float</span> div = <span class="num">0.5</span> * (R - L + T - B);  <span class="cm">// 中心差分记账</span></pre>
+          <a class="algo-link" href="#ch4">→ 去演示 4-1 的散度视图：红=源 蓝=汇，投影开启时斑点一帧消失</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>这里用的<b>中心差分</b>（R−L 而不是 R−C）是二阶精度的：误差与格子尺寸的平方成正比，格子减半误差降为四分之一 —— 这就是为什么网格加密对投影质量的收益是超线性的。</p>
+            <p>边界处理"法向速度取反"（如左边界的 u 取 −u）等价于"墙外有一面镜像的风往回吹"，这样墙边的账天然是平的，不需要单独的边界 pass。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A11</span>
+        <div>
+          <h4>压力泊松方程 · Jacobi 迭代<span class="algo-en">Poisson / Jacobi</span></h4>
+          <p class="algo-essence">"取邻居平均、再减我的账"，全屏刷 N 遍</p>
+        </div>
+        <span class="algo-stage">心脏</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs><marker id="a11m" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#8494ab"/></marker></defs>
+            <rect x="117" y="67" width="66" height="50" rx="8" fill="rgba(63,216,197,0.12)" stroke="#3fd8c5" stroke-width="1.8"/>
+            <rect x="120" y="20" width="60" height="40" rx="7" fill="#0d131e" stroke="#26334a"/>
+            <text x="150" y="45" fill="#8494ab" font-size="11" text-anchor="middle" font-family="monospace">p上</text>
+            <rect x="120" y="124" width="60" height="40" rx="7" fill="#0d131e" stroke="#26334a"/>
+            <text x="150" y="149" fill="#8494ab" font-size="11" text-anchor="middle" font-family="monospace">p下</text>
+            <rect x="32" y="70" width="60" height="44" rx="7" fill="#0d131e" stroke="#26334a"/>
+            <text x="62" y="96" fill="#8494ab" font-size="11" text-anchor="middle" font-family="monospace">p左</text>
+            <rect x="208" y="70" width="60" height="44" rx="7" fill="#0d131e" stroke="#26334a"/>
+            <text x="238" y="96" fill="#8494ab" font-size="11" text-anchor="middle" font-family="monospace">p右</text>
+            <line x1="150" y1="62" x2="150" y2="76" stroke="#8494ab" stroke-width="1.5" marker-end="url(#a11m)"/>
+            <line x1="150" y1="122" x2="150" y2="108" stroke="#8494ab" stroke-width="1.5" marker-end="url(#a11m)"/>
+            <line x1="94" y1="92" x2="112" y2="92" stroke="#8494ab" stroke-width="1.5" marker-end="url(#a11m)"/>
+            <line x1="206" y1="92" x2="188" y2="92" stroke="#8494ab" stroke-width="1.5" marker-end="url(#a11m)"/>
+            <text x="150" y="89" fill="#3fd8c5" font-size="11.5" text-anchor="middle" font-family="monospace">(Σp − div)/4</text>
+            <text x="150" y="104" fill="#5a6b84" font-size="9.5" text-anchor="middle">我 = 邻居平均 − 我的账</text>
+            <text x="150" y="180" fill="#5a6b84" font-size="10.5" text-anchor="middle">这一行规则全屏刷 20~40 遍，p 收敛到接近真解</text>
+          </svg>
+          <div class="fig-cap">膨胀户被解出压力低谷 → 被拉回；被挤户解出压力峰 → 被撑开</div>
+        </div>
+        <div class="algo-text">
+          <p>数学上把账算平等价于解一个泊松方程 <code>∇²p = ∇·u</code>——但真解是百万级联立方程，游戏不等它，用 <b>Jacobi 迭代</b>：给每个格子一个傻瓜更新规则，反复搓到接近。压力就是把速度场<b>熨平到不可压缩的那只熨斗</b>，迭代次数 = 熨多少下。两个工程技巧：<b>热启动</b>（上一帧的压力留 80% 当初始猜测，收敛快得多）和<b>敢少迭代</b>（"接近不可压缩"视觉上已经是水：1 次 → 果冻，40 次 → 锋利）。</p>
+          <div class="formula">p ← ( p左 + p右 + p上 + p下 − div ) / 4&nbsp;&nbsp;× N 遍</div>
+          <pre class="code"><span class="kw">float</span> pressure = (L + R + B + T - divergence) * <span class="num">0.25</span>;</pre>
+          <a class="algo-link" href="#ch4">→ 去演示 4-1 拖"压力迭代"滑块 1 → 60，现场看质感</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>Jacobi 不是唯一的解法，只是<b>最好写、最好并行</b>的：<b>Gauss-Seidel</b>（用刚算出的新值当邻居）收敛快一倍但相邻像素有依赖、并行不干净；<b>共轭梯度</b>、<b>多重网格（multigrid）</b>能把迭代次数从几十降到个位数 —— FluidNinja 这类商业资产在这层的优化深度是核心竞争力之一。</p>
+            <p>收敛慢的根本原因：Jacobi 每轮信息只传一格，而压力的"影响范围"是全局的。多重网格的思路就是先在粗网格上把大范围趋势算平，再回细网格修细节。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A12</span>
+        <div>
+          <h4>梯度减除 · 投影<span class="algo-en">Gradient Subtract</span></h4>
+          <p class="algo-essence">u ← u − ∇p，账就平了</p>
+        </div>
+        <span class="algo-stage">收针</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="a12c" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#3fd8c5"/></marker>
+              <marker id="a12o" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#ff9e64"/></marker>
+            </defs>
+            <line x1="30" y1="150" x2="270" y2="150" stroke="#26334a" stroke-width="1"/>
+            <path d="M30 100 C 70 40, 100 40, 140 100 C 180 160, 210 160, 250 100 L270 85" fill="none" stroke="#8494ab" stroke-width="2"/>
+            <text x="85" y="34" fill="#5a6b84" font-size="10.5" text-anchor="middle">压力谷（膨胀户）</text>
+            <text x="205" y="178" fill="#5a6b84" font-size="10.5" text-anchor="middle">压力峰（被挤户）</text>
+            <line x1="140" y1="118" x2="140" y2="66" stroke="#ff9e64" stroke-width="2" marker-end="url(#a12o)"/>
+            <text x="148" y="80" fill="#ff9e64" font-size="11" font-family="monospace">∇p</text>
+            <line x1="140" y1="70" x2="96" y2="70" stroke="#3fd8c5" stroke-width="2" marker-end="url(#a12c)"/>
+            <text x="100" y="62" fill="#3fd8c5" font-size="11" font-family="monospace">−∇p 修正</text>
+            <text x="150" y="26" fill="#8494ab" font-size="10.5" text-anchor="middle">梯度永远指向"更挤"的方向 → 逆着它修，挤的松开、疏的填上</text>
+          </svg>
+          <div class="fig-cap">算散度 → 解压力 → 减梯度，三步合称"投影"</div>
+        </div>
+        <div class="algo-text">
+          <p>压力算出来了，最后一步：逆着压力梯度修正速度。可以证明修正后的 u 散度恰好为零——整条"算散度 → 解压力 → 减梯度"流水线合称<b>投影（projection）</b>，是这类流体"像水而不是像烟"的全部原因。</p>
+          <div class="formula">u ← u − ∇p&nbsp;&nbsp;⇒&nbsp;&nbsp;∇·u = 0 ✓</div>
+          <pre class="code">velocity.xy -= <span class="fn">vec2</span>(R - L, T - B);  <span class="cm">// R/L/T/B 是压力采样</span></pre>
+          <a class="algo-link" href="#ch4">→ 去演示 4-1 关掉"压力投影"，看流体立刻"漏气"</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>"任何速度场都能分解成一个无旋场和一个无散场之和" —— 这是数学上的 <b>Helmholtz 分解</b>。投影 u ← u − ∇p 做的事，就是减掉无旋部分、留下无散部分。所以这个步骤叫"投影"：把速度<b>投影</b>到"所有无散场"组成的子空间上。</p>
+            <p>为什么减 ∇p 减掉的恰好是无旋部分？因为任何标量场的梯度都没有旋度（∇×∇p ≡ 0）—— 数学早在 19 世纪就铺好路了。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <h3 class="algo-group">第四组 · 自驱动 <span class="gno">没人碰它也在动</span></h3>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A14</span>
+        <div>
+          <h4>浮力<span class="algo-en">Buoyancy</span></h4>
+          <p class="algo-essence">热轻于冷：温度越高，向上的力越强</p>
+        </div>
+        <span class="algo-stage">火焰的发动机</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs><marker id="a14m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ff9e64"/></marker></defs>
+            <path d="M150 160 C 128 132, 122 112, 138 92 C 128 104, 118 104, 118 88 C 118 68, 136 58, 150 34 C 164 58, 182 68, 182 88 C 182 104, 172 104, 162 92 C 178 112, 172 132, 150 160 Z" fill="rgba(255,158,100,0.28)" stroke="#ff9e64" stroke-width="2"/>
+            <path d="M150 138 C 138 122, 138 108, 150 92 C 162 108, 162 122, 150 138 Z" fill="rgba(255,220,120,0.5)"/>
+            <circle cx="150" cy="108" r="5" fill="#fff2cc"/>
+            <line x1="150" y1="170" x2="150" y2="20" stroke="#ff9e64" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#a14m)"/>
+            <text x="150" y="182" fill="#5a6b84" font-size="10.5" text-anchor="middle">T 大 → 力大 → 升得快</text>
+            <text x="163" y="34" fill="#8494ab" font-size="10.5">F = β·T</text>
+          </svg>
+          <div class="fig-cap">温度场（复用染料 R 通道）每帧换一次升力</div>
+        </div>
+        <div class="algo-text">
+          <p>火焰、烟、热浪不需要交互：热空气密度低，自动获得向上的加速度，力正比于温度。配合底部持续"点火"和 dissipation 的冷却，火苗的形状、摇曳、顶端熄灭全部自发涌现。再加一层随时间和高度变化的水平摆动（两个 sin 叠加），就是风的错觉。</p>
+          <div class="formula">u.y += β · T · Δt&nbsp;&nbsp;&nbsp;u.x += w · T · sway(t) · Δt</div>
+          <a class="algo-link" href="#ch6">→ 去演示 6-1 调浮力和摇曳滑块</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>严格的热浮力还含一项"环境温度扣减"（T − T₀），避免全场均匀受热时整体漂移；烟囱效果的经典变体是再加一个<b>重量</b>项（u.y −= w·density），温度往上顶、染料往下坠 —— 烟云的翻滚感就来自这两股相反的力。</p>
+            <p>黑体色带（暗红→橙→黄→白）是物理正确的近似：理想黑体的辐射颜色只随温度变化，铁匠看火色判温度用了几千年。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A15</span>
+        <div>
+          <h4>持续注入 / 排出<span class="algo-en">Inflow / Outflow</span></h4>
+          <p class="algo-essence">把 splat 从"点一下"变成"每帧都来"，就是一条河</p>
+        </div>
+        <span class="algo-stage">河流的发动机</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="a15m" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#3fd8c5"/></marker>
+            </defs>
+            <rect x="18" y="30" width="264" height="130" rx="8" fill="rgba(63,216,197,0.04)" stroke="#26334a"/>
+            <line x1="34" y1="70" x2="120" y2="70" stroke="#3fd8c5" stroke-width="2.2" marker-end="url(#a15m)"/>
+            <line x1="34" y1="120" x2="120" y2="120" stroke="#3fd8c5" stroke-width="2.2" marker-end="url(#a15m)"/>
+            <text x="30" y="52" fill="#3fd8c5" font-size="10.5">inflow 每帧注入</text>
+            <circle cx="160" cy="72" r="20" fill="#0d1320" stroke="#8494ab" stroke-width="2"/>
+            <circle cx="208" cy="118" r="13" fill="#0d1320" stroke="#8494ab" stroke-width="2"/>
+            <text x="160" y="76" fill="#5a6b84" font-size="9" text-anchor="middle">石头</text>
+            <path d="M150 40 Q 178 96, 150 150" fill="none" stroke="#7aa2f7" stroke-width="1.6" stroke-dasharray="4 4" opacity="0.8"/>
+            <path d="M172 46 Q 200 118, 172 152" fill="none" stroke="#7aa2f7" stroke-width="1.6" stroke-dasharray="4 4" opacity="0.6"/>
+            <rect x="242" y="30" width="40" height="130" fill="rgba(255,158,100,0.05)" stroke="#ff9e64" stroke-opacity="0.4" stroke-dasharray="4 3"/>
+            <text x="262" y="22" fill="#ff9e64" font-size="9.5" text-anchor="middle">outflow 吸能</text>
+            <text x="150" y="178" fill="#5a6b84" font-size="10.5" text-anchor="middle">进水口 ↔ 出水口：一条永不停歇的河</text>
+          </svg>
+          <div class="fig-cap">第 4 章的投影保证注入的水"有处可去"</div>
+        </div>
+        <div class="algo-text">
+          <p>河流的内核朴素得惊人：边界处每帧 splat 一个恒定方向的速度（上游），另一侧做阻尼吸能 + 禁止倒流（下游）。配合圆形区域内速度清零的"石头"，投影会自动解出<strong>绕流</strong>，石头背后旋出成串涡街。FluidNinja Live Environment 的河流、熔岩、沼气，都是这套内核换色带、换参数。</p>
+          <div class="formula">u(边界, 每帧) += v_in&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;石头内: u = 0</div>
+          <a class="algo-link" href="#ch6">→ 去演示 6-2 调流速、开关石头</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>进水口用 splat 而不是直接写纹理，是为了保持管线的"加法一致性"（力永远叠加，不硬覆盖）；真正的产品实现会在边界格子上直接施加 Dirichlet 条件（固定速度），数学上更干净。</p>
+            <p>石头背后的周期性涡旋叫<b>卡门涡街</b>（Kármán vortex street），斯特劳哈尔数描述它的脱落频率 —— 桥梁工程师要提防它，游戏美术却爱死它：免费、自然、还带节奏感。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+    <h3 class="algo-group">第五组 · 输出 <span class="gno">从模拟到画面</span></h3>
+
+    <article class="algo-card reveal">
+      <div class="algo-head">
+        <span class="algo-no">A13</span>
+        <div>
+          <h4>法线生成<span class="algo-en">Normal from Height</span></h4>
+          <p class="algo-essence">把染料当高度，梯度的反方向就是水面朝向</p>
+        </div>
+        <span class="algo-stage">输出</span>
+      </div>
+      <div class="algo-body">
+        <div class="algo-fig">
+          <svg viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg">
+            <defs><marker id="a13m" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#3fd8c5"/></marker></defs>
+            <circle cx="264" cy="26" r="9" fill="none" stroke="#ff9e64" stroke-width="2"/>
+            <g stroke="#ff9e64" stroke-width="1.4">
+              <line x1="264" y1="10" x2="264" y2="15"/><line x1="264" y1="37" x2="264" y2="42"/>
+              <line x1="248" y1="26" x2="253" y2="26"/><line x1="275" y1="26" x2="280" y2="26"/>
+            </g>
+            <path d="M30 130 C 70 70, 100 70, 140 120 C 175 162, 205 162, 245 108 L 270 88" fill="none" stroke="#8494ab" stroke-width="2"/>
+            <line x1="88" y1="118" x2="122" y2="80" stroke="#5a6b84" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <line x1="102" y1="96" x2="108" y2="58" stroke="#3fd8c5" stroke-width="2" marker-end="url(#a13m)"/>
+            <line x1="196" y1="142" x2="230" y2="120" stroke="#5a6b84" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <line x1="210" y1="132" x2="214" y2="94" stroke="#3fd8c5" stroke-width="2" marker-end="url(#a13m)"/>
+            <text x="196" y="182" fill="#5a6b84" font-size="10.5" text-anchor="middle">高度 h(x)（染料亮度）</text>
+            <text x="96" y="46" fill="#3fd8c5" font-size="10.5" text-anchor="middle">法线 ⊥ 切线</text>
+            <text x="252" y="52" fill="#ff9e64" font-size="10.5" text-anchor="middle">光源</text>
+          </svg>
+          <div class="fig-cap">法线 × 光源 = 高光、深浅 —— 一片"水"诞生</div>
+        </div>
+        <div class="algo-text">
+          <p>引擎的水需要法线贴图做高光和折射，而模拟只给了颜色密度。解法：把染料亮度当"高度"，<b>高度梯度的反方向就是表面朝向</b>，再套最简单的光照（漫反射 + Blinn-Phong 高光）。这就是 FluidNinja 交给 Unity 渲染管线的核心素材之一——演示 5-1 的"水面法线"视图就是它的最小实现。</p>
+          <div class="formula">n = normalize( −∂h/∂x, −∂h/∂y, k )</div>
+          <pre class="code"><span class="kw">vec3</span> n = <span class="fn">normalize</span>(<span class="fn">vec3</span>((hL - hR) * k, (hB - hT) * k, <span class="num">1.0</span>));
+<span class="kw">float</span> diff = <span class="fn">max</span>(<span class="fn">dot</span>(n, L), <span class="num">0.0</span>);
+col = 基色 * (<span class="num">0.45</span> + <span class="num">0.62</span> * diff) + 高光;</pre>
+          <a class="algo-link" href="#ch5">→ 去演示 5-1 切"水面法线"视图或点"水"预设</a>
+          <details class="deep"><summary>深入一层</summary><div class="deep-body">
+            <p>公式里的 k（本页代码用 16）是<b>波纹陡峭度</b>：k 越大，同样高度的染料边缘算出的法线越倾斜、高光越碎。引擎里的等价物是法线贴图的 strength/flatness 参数。</p>
+            <p>在 Unity 里接法：把这张法线 RT 接入 Lit 材质的 Normal Map 通道、高度接 Displacement，再让 FluidNinja 的投影器把整张材质贴到地形上 —— 水就从 2D 模拟"长"进了 3D 世界。</p>
+          </div></details>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <footer class="site">
+    <div>课程 + 13 张算法卡片 · 所有流体均在你的浏览器中实时求解 · 单文件 · 零依赖 · 源码即教材</div>
+    <div class="mono">Stable Fluids · since 1999 · still magic</div>
+  </footer>
+</main>
+
+<button id="totop" title="回到顶部" aria-label="回到顶部">↑</button>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════
+   FluidNinja 算法教学 —— 页面脚本
+   核心：一个可配置的 Stable Fluids GPU 求解器（FluidSim 类），
+   各章节演示 = 同一个类的不同配置 + 可视化模式。
+   ═══════════════════════════════════════════════════════════════ */
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+/* ───────────────────── WebGL 工具 ───────────────────── */
+
+const VERT_SRC = `#version 300 es
+precision highp float;
+layout(location = 0) in vec2 aPosition;
+out vec2 vUv;
+void main () {
+  vUv = aPosition * 0.5 + 0.5;
+  gl_Position = vec4(aPosition, 0.0, 1.0);
+}`;
+
+function compileShader (gl, type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS))
+    throw new Error(gl.getShaderInfoLog(sh) || "shader compile failed");
+  return sh;
+}
+
+function createProgram (gl, fsrc) {
+  const vs = compileShader(gl, gl.VERTEX_SHADER, VERT_SRC);
+  const fs = compileShader(gl, gl.FRAGMENT_SHADER, fsrc);
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+    throw new Error(gl.getProgramInfoLog(prog) || "link failed");
+  const uniforms = {};
+  const n = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) {
+    const name = gl.getActiveUniform(prog, i).name;
+    uniforms[name] = gl.getUniformLocation(prog, name);
+  }
+  return { prog, uniforms };
+}
+
+function createFBO (gl, w, h, internalFormat, format, type, filter) {
+  gl.activeTexture(gl.TEXTURE0);
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
+  const fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  gl.viewport(0, 0, w, h);
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  return {
+    texture, fbo, width: w, height: h,
+    texelSizeX: 1 / w, texelSizeY: 1 / h,
+    attach (id) {
+      gl.activeTexture(gl.TEXTURE0 + id);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      return id;
+    }
+  };
+}
+
+function createDoubleFBO (gl, w, h, internalFormat, format, type, filter) {
+  let fbo1 = createFBO(gl, w, h, internalFormat, format, type, filter);
+  let fbo2 = createFBO(gl, w, h, internalFormat, format, type, filter);
+  return {
+    width: w, height: h, texelSizeX: 1 / w, texelSizeY: 1 / h,
+    get read () { return fbo1; },
+    set read (v) { fbo1 = v; },
+    get write () { return fbo2; },
+    set write (v) { fbo2 = v; },
+    swap () { const t = fbo1; fbo1 = fbo2; fbo2 = t; }
+  };
+}
+
+/* ───────────────────── Shaders（教程展示的即此处运行的） ───────────────────── */
+
+const FS_CLEAR = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uTexture;
+uniform float value;
+void main () {
+  fragColor = value * texture(uTexture, vUv);
+}`;
+
+const FS_SPLAT = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uTarget;
+uniform float aspectRatio;
+uniform vec3 color;
+uniform vec2 point;
+uniform float radius;
+void main () {
+  vec2 p = vUv - point;
+  p.x *= aspectRatio;
+  vec3 splat = exp(-dot(p, p) / radius) * color;
+  vec3 base = texture(uTarget, vUv).xyz;
+  fragColor = vec4(base + splat, 1.0);
+}`;
+
+const FS_ADVECT = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uVelocity;
+uniform sampler2D uSource;
+uniform vec2 texelSize;
+uniform float dt;
+uniform float dissipation;
+uniform int uForward;   // 0 = 半拉格朗日回溯（正确），1 = 前向采样（方向反了）
+void main () {
+  vec2 v = texture(uVelocity, vUv).xy;
+  vec2 coord = (uForward == 0)
+    ? vUv - dt * v * texelSize
+    : vUv + dt * v * texelSize;
+  vec4 result = texture(uSource, coord);
+  float decay = 1.0 + dissipation * dt;
+  fragColor = result / decay;
+}`;
+
+const FS_DIVERGENCE = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uVelocity;
+uniform vec2 texelSize;
+void main () {
+  float L = texture(uVelocity, vUv - vec2(texelSize.x, 0.0)).x;
+  float R = texture(uVelocity, vUv + vec2(texelSize.x, 0.0)).x;
+  float T = texture(uVelocity, vUv + vec2(0.0, texelSize.y)).y;
+  float B = texture(uVelocity, vUv - vec2(0.0, texelSize.y)).y;
+  vec2 C = texture(uVelocity, vUv).xy;
+  // 边界：法向速度取反（墙不可穿透）
+  if (vUv.x - texelSize.x < 0.0) L = -C.x;
+  if (vUv.x + texelSize.x > 1.0) R = -C.x;
+  if (vUv.y + texelSize.y > 1.0) T = -C.y;
+  if (vUv.y - texelSize.y < 0.0) B = -C.y;
+  float div = 0.5 * (R - L + T - B);
+  fragColor = vec4(div, 0.0, 0.0, 1.0);
+}`;
+
+const FS_CURL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uVelocity;
+uniform vec2 texelSize;
+void main () {
+  float L = texture(uVelocity, vUv - vec2(texelSize.x, 0.0)).y;
+  float R = texture(uVelocity, vUv + vec2(texelSize.x, 0.0)).y;
+  float T = texture(uVelocity, vUv + vec2(0.0, texelSize.y)).x;
+  float B = texture(uVelocity, vUv - vec2(0.0, texelSize.y)).x;
+  float vorticity = R - L - T + B;
+  fragColor = vec4(0.5 * vorticity, 0.0, 0.0, 1.0);
+}`;
+
+const FS_VORTICITY = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uVelocity;
+uniform sampler2D uCurl;
+uniform vec2 texelSize;
+uniform float curl;
+uniform float dt;
+void main () {
+  float L = texture(uCurl, vUv - vec2(texelSize.x, 0.0)).x;
+  float R = texture(uCurl, vUv + vec2(texelSize.x, 0.0)).x;
+  float T = texture(uCurl, vUv + vec2(0.0, texelSize.y)).x;
+  float B = texture(uCurl, vUv - vec2(0.0, texelSize.y)).x;
+  float C = texture(uCurl, vUv).x;
+  vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L));
+  force /= length(force) + 0.0001;
+  force *= curl * C;
+  force.y *= -1.0;
+  vec2 velocity = texture(uVelocity, vUv).xy;
+  velocity += force * dt;
+  velocity = min(max(velocity, -1000.0), 1000.0);
+  fragColor = vec4(velocity, 0.0, 1.0);
+}`;
+
+const FS_PRESSURE = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uPressure;
+uniform sampler2D uDivergence;
+uniform vec2 texelSize;
+void main () {
+  float L = texture(uPressure, vUv - vec2(texelSize.x, 0.0)).x;
+  float R = texture(uPressure, vUv + vec2(texelSize.x, 0.0)).x;
+  float T = texture(uPressure, vUv + vec2(0.0, texelSize.y)).x;
+  float B = texture(uPressure, vUv - vec2(0.0, texelSize.y)).x;
+  float divergence = texture(uDivergence, vUv).x;
+  float pressure = (L + R + B + T - divergence) * 0.25;
+  fragColor = vec4(pressure, 0.0, 0.0, 1.0);
+}`;
+
+const FS_GRADIENT_SUBTRACT = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uPressure;
+uniform sampler2D uVelocity;
+uniform vec2 texelSize;
+void main () {
+  float L = texture(uPressure, vUv - vec2(texelSize.x, 0.0)).x;
+  float R = texture(uPressure, vUv + vec2(texelSize.x, 0.0)).x;
+  float T = texture(uPressure, vUv + vec2(0.0, texelSize.y)).x;
+  float B = texture(uPressure, vUv - vec2(0.0, texelSize.y)).x;
+  vec2 velocity = texture(uVelocity, vUv).xy;
+  velocity.xy -= vec2(R - L, T - B);
+  fragColor = vec4(velocity, 0.0, 1.0);
+}`;
+
+const FS_BUOYANCY = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uVelocity;
+uniform sampler2D uTemperature;   // 复用染料场：R 通道 = 温度
+uniform float dt;
+uniform float buoyancy;           // 浮力强度（热轻于冷，自动向上）
+uniform float wobble;             // 风摆动强度（让火苗摇曳）
+uniform float time;
+void main () {
+  vec2 v = texture(uVelocity, vUv).xy;
+  float T = texture(uTemperature, vUv).x;
+  // 两个不同频率的 sin 叠加 ≈ 廉价噪声：火焰摇曳感的全部来源
+  float sway = sin(vUv.y * 9.0 + time * 2.3) * 0.6 + sin(vUv.y * 17.0 - time * 3.4) * 0.4;
+  v.y += buoyancy * T * dt;
+  v.x += wobble * T * sway * dt;
+  // 顶端熄灭：热气临近上边界减速消散，避免撞墙堆积成云
+  v *= 1.0 - 0.92 * smoothstep(0.8, 1.0, vUv.y);
+  fragColor = vec4(v, 0.0, 1.0);
+}`;
+
+const FS_RIVER_BOUNDS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uVelocity;
+uniform float aspect;
+uniform vec2 uOb1; uniform float uR1;   // 石头一（圆内速度清零）
+uniform vec2 uOb2; uniform float uR2;   // 石头二
+uniform float uSinkX;                   // 右缘出水口：阻尼吸能、禁止倒流
+void main () {
+  vec2 v = texture(uVelocity, vUv).xy;
+  vec2 p1 = vUv - uOb1; p1.x *= aspect;
+  vec2 p2 = vUv - uOb2; p2.x *= aspect;
+  if (dot(p1, p1) < uR1 * uR1 || dot(p2, p2) < uR2 * uR2) v = vec2(0.0);
+  if (vUv.x > uSinkX) {
+    float k = (vUv.x - uSinkX) / (1.0 - uSinkX);
+    v *= 1.0 - 0.88 * k * k;
+    if (v.x < 0.0) v.x *= 0.4;
+  }
+  fragColor = vec4(v, 0.0, 1.0);
+}`;
+
+const FS_DISPLAY = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uDye;
+uniform sampler2D uVelocity;
+uniform sampler2D uPressure;
+uniform sampler2D uDivergence;
+uniform int uMode;          // 0 染料 1 速度 2 散度 3 压力 4 水面法线 5 染料+网格
+uniform vec2 uSimGrid;
+
+vec3 hsv2rgb (vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+float lum (vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+void main () {
+  if (uMode == 1) {                                    // ── 速度场：色相=方向 亮度=快慢
+    vec2 v = texture(uVelocity, vUv).xy;
+    float mag = clamp(length(v) * 0.13, 0.0, 1.0);
+    float hue = atan(v.y, v.x) / 6.28318530718 + 0.5;
+    vec3 c = hsv2rgb(vec3(hue, 0.75, mag));
+    fragColor = vec4(c + vec3(0.015, 0.02, 0.035), 1.0);
+    return;
+  }
+  if (uMode == 2) {                                    // ── 散度：红=膨胀 蓝=被挤
+    float d = texture(uDivergence, vUv).x;
+    float s = clamp(abs(d) * 1.6, 0.0, 1.0);
+    vec3 base = vec3(0.045, 0.055, 0.085);
+    vec3 c = (d > 0.0)
+      ? mix(base, vec3(1.0, 0.40, 0.28), s)
+      : mix(base, vec3(0.28, 0.55, 1.0), s);
+    fragColor = vec4(c, 1.0);
+    return;
+  }
+  if (uMode == 3) {                                    // ── 压力：灰度（亮=峰 暗=谷）
+    float p = texture(uPressure, vUv).x;
+    float s = clamp(0.5 + p * 4.0, 0.0, 1.0);
+    fragColor = vec4(vec3(s * 0.92 + 0.04), 1.0);
+    return;
+  }
+  if (uMode == 4) {                                    // ── 水面：密度→法线→光照
+    vec2 px = 1.0 / vec2(textureSize(uDye, 0));
+    float hL = lum(texture(uDye, vUv - vec2(px.x, 0.0)).rgb);
+    float hR = lum(texture(uDye, vUv + vec2(px.x, 0.0)).rgb);
+    float hB = lum(texture(uDye, vUv - vec2(0.0, px.y)).rgb);
+    float hT = lum(texture(uDye, vUv + vec2(0.0, px.y)).rgb);
+    vec3 n = normalize(vec3((hL - hR) * 16.0, (hB - hT) * 16.0, 1.0));
+    float h = lum(texture(uDye, vUv).rgb);
+    vec3 Ldir = normalize(vec3(0.5, 0.7, 0.6));
+    float diff = max(dot(n, Ldir), 0.0);
+    vec3 col = mix(vec3(0.03, 0.10, 0.16), vec3(0.10, 0.50, 0.58), clamp(h * 1.6, 0.0, 1.0));
+    col = col * (0.45 + 0.62 * diff) + vec3(0.012, 0.02, 0.03);
+    vec3 hv = normalize(Ldir + vec3(0.0, 0.0, 1.0));
+    float spec = pow(max(dot(n, hv), 0.0), 60.0);
+    col += vec3(1.0, 0.98, 0.9) * spec * 1.4;
+    // 微波纹：给平坦区一点法向扰动，避免死平
+    col += vec3(0.5, 0.7, 0.75) * pow(max(dot(normalize(vec3((hL - hR) * 90.0, (hB - hT) * 90.0, 8.0)), hv), 0.0), 24.0) * 0.35 * clamp(h * 3.0, 0.0, 1.0);
+    fragColor = vec4(col, 1.0);
+    return;
+  }
+  if (uMode == 6) {                                    // ── 火焰：温度 → 黑体色带
+    float T = clamp(texture(uDye, vUv).x * 1.5, 0.0, 1.0);
+    vec3 c = vec3(0.0);
+    c += smoothstep(0.02, 0.38, T) * vec3(0.55, 0.05, 0.0);   // 暗红
+    c += smoothstep(0.32, 0.68, T) * vec3(1.0, 0.44, 0.02);   // 橙
+    c += smoothstep(0.62, 0.92, T) * vec3(1.0, 0.86, 0.35);   // 黄
+    c += smoothstep(0.88, 1.0,  T) * vec3(1.0);               // 白热
+    // 底部一圈微光：让火苗根部的形状隐约可见
+    float glow = smoothstep(0.0, 0.12, T) * 0.25;
+    fragColor = vec4(c * 1.3 + vec3(glow * 0.5, glow * 0.18, 0.0), 1.0);
+    return;
+  }
+  // ── 染料（0 / 5）
+  vec2 uv = vUv;
+  if (uMode == 5) {
+    vec2 cell = floor(uv * uSimGrid);
+    uv = (cell + 0.5) / uSimGrid;                      // 格心采样 = 最近邻效果
+  }
+  vec3 c = texture(uDye, uv).rgb;
+  if (uMode == 0) {                                    // 轻微体积感
+    vec2 px = 1.0 / vec2(textureSize(uDye, 0));
+    float dx = lum(texture(uDye, uv + vec2(px.x, 0.0)).rgb) - lum(texture(uDye, uv - vec2(px.x, 0.0)).rgb);
+    float dy = lum(texture(uDye, uv + vec2(0.0, px.y)).rgb) - lum(texture(uDye, uv - vec2(0.0, px.y)).rgb);
+    c *= clamp(1.0 - (dx + dy) * 3.2, 0.55, 1.6);
+  }
+  if (uMode == 5) {                                    // 网格线
+    vec2 f = fract(vUv * uSimGrid);
+    vec2 e = min(f, 1.0 - f);
+    float edge = min(e.x, e.y);
+    c *= 1.0 - 0.72 * (1.0 - smoothstep(0.02, 0.09, edge));
+  }
+  fragColor = vec4(c, 1.0);
+}`;
+
+/* ───────────────────── FluidSim 求解器 ───────────────────── */
+
+const animatables = [];   // { update(dt, now), visible, canvas }
+
+class FluidSim {
+  constructor (canvas, cfg) {
+    this.canvas = canvas;
+    this.cfg = Object.assign({
+      simRes: 96, dyeRes: 384,
+      pressureIters: 20, curl: 25,
+      useProjection: true,
+      dyeDissipation: 0.6, velDissipation: 0.25,
+      dtScale: 1.0, forwardAdvection: false,
+      mode: 0, auto: "once", showFps: false,
+      splatRadius: 0.0025, force: 6000
+    }, cfg);
+
+    const gl = canvas.getContext("webgl2", { alpha: false, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false });
+    if (!gl) throw new Error("no webgl2");
+    const extCBF = gl.getExtension("EXT_color_buffer_float");
+    if (!extCBF) throw new Error("no EXT_color_buffer_float");
+    this.gl = gl;
+
+    // VAO：一个全屏三角形带
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    const vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    this.vao = vao;
+
+    this.pClear = createProgram(gl, FS_CLEAR);
+    this.pSplat = createProgram(gl, FS_SPLAT);
+    this.pAdvect = createProgram(gl, FS_ADVECT);
+    this.pDiv = createProgram(gl, FS_DIVERGENCE);
+    this.pCurl = createProgram(gl, FS_CURL);
+    this.pVort = createProgram(gl, FS_VORTICITY);
+    this.pPress = createProgram(gl, FS_PRESSURE);
+    this.pGrad = createProgram(gl, FS_GRADIENT_SUBTRACT);
+    this.pDisplay = createProgram(gl, FS_DISPLAY);
+    this.pBuoy = createProgram(gl, FS_BUOYANCY);
+    this.pRiver = createProgram(gl, FS_RIVER_BOUNDS);
+
+    this.resizeCanvas();
+    const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+    const res = this.getResolution(this.cfg.simRes, aspect);
+    const dye = this.getResolution(this.cfg.dyeRes, aspect);
+    this.simW = res.width; this.simH = res.height;
+    this.dyeW = dye.width; this.dyeH = dye.height;
+
+    const HF = gl.HALF_FLOAT;
+    this.velocity = createDoubleFBO(gl, res.width, res.height, gl.RG16F, gl.RG, HF, gl.LINEAR);
+    this.dye = createDoubleFBO(gl, dye.width, dye.height, gl.RGBA16F, gl.RGBA, HF, gl.LINEAR);
+    this.pressure = createDoubleFBO(gl, res.width, res.height, gl.R16F, gl.RED, HF, gl.NEAREST);
+    this.divergence = createFBO(gl, res.width, res.height, gl.R16F, gl.RED, HF, gl.NEAREST);
+    this.curlTex = createFBO(gl, res.width, res.height, gl.R16F, gl.RED, HF, gl.NEAREST);
+
+    this.visible = false;
+    this.splatQueue = [];
+    this.lastInteract = -1e9;
+    this.lastAuto = 0;
+    this.fpsAcc = 0; this.fpsN = 0; this.fpsShown = 0; this.fpsEl = null;
+    this.attachInput();
+  }
+
+  getResolution (base, aspect) {
+    const a = Math.max(aspect, 1 / Math.max(aspect, 0.0001));
+    const ar = aspect >= 1 ? aspect : 1 / aspect;
+    const min = Math.round(base), max = Math.round(base * ar);
+    return aspect >= 1 ? { width: max, height: min } : { width: min, height: max };
+  }
+
+  resizeCanvas () {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(2, Math.round(this.canvas.clientWidth * dpr));
+    const h = Math.max(2, Math.round(this.canvas.clientHeight * dpr));
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w; this.canvas.height = h;
+    }
+  }
+
+  blit (target) {
+    const gl = this.gl;
+    if (target == null) {
+      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    } else {
+      gl.viewport(0, 0, target.width, target.height);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+    }
+    gl.bindVertexArray(this.vao);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  /* —— 输入 —— */
+  attachInput () {
+    const c = this.canvas;
+    let down = false, px = 0, py = 0, hue = Math.random();
+    const uvOf = (e) => {
+      const r = c.getBoundingClientRect();
+      return [(e.clientX - r.left) / Math.max(1, r.width), 1 - (e.clientY - r.top) / Math.max(1, r.height)];
+    };
+    c.addEventListener("pointerdown", (e) => {
+      down = true; const [x, y] = uvOf(e); px = x; py = y;
+      hue = Math.random();
+      this.lastInteract = performance.now();
+      try { c.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    c.addEventListener("pointermove", (e) => {
+      if (!down) return;
+      const [x, y] = uvOf(e);
+      const dx = x - px, dy = y - py;
+      px = x; py = y;
+      if (Math.abs(dx) + Math.abs(dy) < 1e-5) return;
+      this.lastInteract = performance.now();
+      const col = FluidSim.hsv(hue, 1.0, 1.0).map(v => v * 0.22);
+      this.splatQueue.push({ x, y, dx: dx * this.cfg.force, dy: dy * this.cfg.force, color: col });
+    });
+    const up = () => { down = false; };
+    c.addEventListener("pointerup", up);
+    c.addEventListener("pointercancel", up);
+    c.addEventListener("pointerleave", up);
+  }
+
+  static hsv (h, s, v) {
+    const i = Math.floor(h * 6), f = h * 6 - i;
+    const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+      case 0: return [v, t, p]; case 1: return [q, v, p]; case 2: return [p, v, t];
+      case 3: return [p, q, v]; case 4: return [t, p, v]; default: return [v, p, q];
+    }
+  }
+
+  splat (x, y, dx, dy, color) { this.splatQueue.push({ x, y, dx, dy, color }); }
+
+  applySplats () {
+    const gl = this.gl;
+    const aspect = this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight);
+    let radius = this.cfg.splatRadius;
+    if (aspect > 1) radius *= aspect;
+    for (const s of this.splatQueue) {
+      // 速度
+      gl.useProgram(this.pSplat.prog);
+      gl.uniform1i(this.pSplat.uniforms.uTarget, this.velocity.read.attach(0));
+      gl.uniform1f(this.pSplat.uniforms.aspectRatio, aspect);
+      gl.uniform2f(this.pSplat.uniforms.point, s.x, s.y);
+      gl.uniform3f(this.pSplat.uniforms.color, s.dx, s.dy, 0);
+      gl.uniform1f(this.pSplat.uniforms.radius, radius);
+      this.blit(this.velocity.write); this.velocity.swap();
+      // 染料
+      if (s.color) {
+        gl.useProgram(this.pSplat.prog);
+        gl.uniform1i(this.pSplat.uniforms.uTarget, this.dye.read.attach(0));
+        gl.uniform1f(this.pSplat.uniforms.aspectRatio, aspect);
+        gl.uniform2f(this.pSplat.uniforms.point, s.x, s.y);
+        gl.uniform3f(this.pSplat.uniforms.color, s.color[0], s.color[1], s.color[2]);
+        gl.uniform1f(this.pSplat.uniforms.radius, radius / 2.6);
+        this.blit(this.dye.write); this.dye.swap();
+      }
+    }
+    this.splatQueue.length = 0;
+  }
+
+  clearAll () {
+    const gl = this.gl;
+    gl.clearColor(0, 0, 0, 1);
+    for (const f of [this.velocity.read, this.velocity.write, this.dye.read, this.dye.write,
+                     this.pressure.read, this.pressure.write, this.divergence, this.curlTex]) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, f.fbo);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+  }
+
+  clearDye () {
+    const gl = this.gl;
+    gl.clearColor(0, 0, 0, 1);
+    for (const f of [this.dye.read, this.dye.write]) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, f.fbo);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+  }
+
+  /* —— 一帧求解 —— */
+  step (dt, now) {
+    const gl = this.gl;
+    const c = this.cfg;
+    dt *= c.dtScale;
+
+    if (c.emitter) c.emitter(this, now);               // ⓪ 自驱动源：火焰/河流（可无）
+    this.applySplats();
+
+    if (c.buoyancy) {                                  // ⓪' 浮力：热轻于冷，自动上升
+      gl.useProgram(this.pBuoy.prog);
+      gl.uniform1i(this.pBuoy.uniforms.uVelocity, this.velocity.read.attach(0));
+      gl.uniform1i(this.pBuoy.uniforms.uTemperature, this.dye.read.attach(1));
+      gl.uniform1f(this.pBuoy.uniforms.dt, dt);
+      gl.uniform1f(this.pBuoy.uniforms.buoyancy, c.buoyancy);
+      gl.uniform1f(this.pBuoy.uniforms.wobble, c.wobble || 0);
+      gl.uniform1f(this.pBuoy.uniforms.time, now / 1000);
+      this.blit(this.velocity.write); this.velocity.swap();
+    }
+
+    if (c.curl > 0) {                                   // ② 涡度
+      gl.useProgram(this.pCurl.prog);
+      gl.uniform2f(this.pCurl.uniforms.texelSize, this.velocity.texelSizeX, this.velocity.texelSizeY);
+      gl.uniform1i(this.pCurl.uniforms.uVelocity, this.velocity.read.attach(0));
+      this.blit(this.curlTex);
+
+      gl.useProgram(this.pVort.prog);
+      gl.uniform2f(this.pVort.uniforms.texelSize, this.velocity.texelSizeX, this.velocity.texelSizeY);
+      gl.uniform1i(this.pVort.uniforms.uVelocity, this.velocity.read.attach(0));
+      gl.uniform1i(this.pVort.uniforms.uCurl, this.curlTex.attach(1));
+      gl.uniform1f(this.pVort.uniforms.curl, c.curl);
+      gl.uniform1f(this.pVort.uniforms.dt, dt);
+      this.blit(this.velocity.write); this.velocity.swap();
+    }
+
+    if (c.river) {                                      // ②' 河流边界：石头清零 + 出水口吸能
+      gl.useProgram(this.pRiver.prog);
+      gl.uniform1i(this.pRiver.uniforms.uVelocity, this.velocity.read.attach(0));
+      gl.uniform1f(this.pRiver.uniforms.aspect, this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight));
+      gl.uniform2f(this.pRiver.uniforms.uOb1, c.river.ob1[0], c.river.ob1[1]);
+      gl.uniform1f(this.pRiver.uniforms.uR1, c.river.r1 * (c.river.enabled ? 1 : 0));
+      gl.uniform2f(this.pRiver.uniforms.uOb2, c.river.ob2[0], c.river.ob2[1]);
+      gl.uniform1f(this.pRiver.uniforms.uR2, c.river.r2 * (c.river.enabled ? 1 : 0));
+      gl.uniform1f(this.pRiver.uniforms.uSinkX, 0.86);
+      this.blit(this.velocity.write); this.velocity.swap();
+    }
+
+    gl.useProgram(this.pDiv.prog);                      // ③ 散度（始终计算，供可视化）
+    gl.uniform2f(this.pDiv.uniforms.texelSize, this.velocity.texelSizeX, this.velocity.texelSizeY);
+    gl.uniform1i(this.pDiv.uniforms.uVelocity, this.velocity.read.attach(0));
+    this.blit(this.divergence);
+
+    if (c.useProjection) {                              // ④⑤ 压力投影
+      gl.useProgram(this.pClear.prog);
+      gl.uniform1i(this.pClear.uniforms.uTexture, this.pressure.read.attach(0));
+      gl.uniform1f(this.pClear.uniforms.value, 0.8);    // 热启动：留 80%
+      this.blit(this.pressure.write); this.pressure.swap();
+
+      gl.useProgram(this.pPress.prog);
+      gl.uniform2f(this.pPress.uniforms.texelSize, this.velocity.texelSizeX, this.velocity.texelSizeY);
+      gl.uniform1i(this.pPress.uniforms.uDivergence, this.divergence.attach(1));
+      for (let i = 0; i < c.pressureIters; i++) {
+        gl.uniform1i(this.pPress.uniforms.uPressure, this.pressure.read.attach(0));
+        this.blit(this.pressure.write); this.pressure.swap();
+      }
+
+      gl.useProgram(this.pGrad.prog);
+      gl.uniform2f(this.pGrad.uniforms.texelSize, this.velocity.texelSizeX, this.velocity.texelSizeY);
+      gl.uniform1i(this.pGrad.uniforms.uPressure, this.pressure.read.attach(0));
+      gl.uniform1i(this.pGrad.uniforms.uVelocity, this.velocity.read.attach(1));
+      this.blit(this.velocity.write); this.velocity.swap();
+    }
+
+    gl.useProgram(this.pAdvect.prog);                   // ⑥ 平流速度
+    gl.uniform2f(this.pAdvect.uniforms.texelSize, this.velocity.texelSizeX, this.velocity.texelSizeY);
+    gl.uniform1i(this.pAdvect.uniforms.uVelocity, this.velocity.read.attach(0));
+    gl.uniform1i(this.pAdvect.uniforms.uSource, this.velocity.read.attach(0));
+    gl.uniform1f(this.pAdvect.uniforms.dt, dt);
+    gl.uniform1f(this.pAdvect.uniforms.dissipation, c.velDissipation);
+    gl.uniform1i(this.pAdvect.uniforms.uForward, c.forwardAdvection ? 1 : 0);
+    this.blit(this.velocity.write); this.velocity.swap();
+
+    if (this.cfg.mode !== 1) {                          // ⑦ 平流染料（速度视图时跳过省电）
+      gl.uniform2f(this.pAdvect.uniforms.texelSize, this.velocity.texelSizeX, this.velocity.texelSizeY);
+      gl.uniform1i(this.pAdvect.uniforms.uVelocity, this.velocity.read.attach(0));
+      gl.uniform1i(this.pAdvect.uniforms.uSource, this.dye.read.attach(1));
+      gl.uniform1f(this.pAdvect.uniforms.dt, dt);
+      gl.uniform1f(this.pAdvect.uniforms.dissipation, c.dyeDissipation);
+      gl.uniform1i(this.pAdvect.uniforms.uForward, c.forwardAdvection ? 1 : 0);
+      this.blit(this.dye.write); this.dye.swap();
+    }
+  }
+
+  render () {
+    const gl = this.gl;
+    this.resizeCanvas();
+    gl.useProgram(this.pDisplay.prog);
+    gl.uniform1i(this.pDisplay.uniforms.uDye, this.dye.read.attach(0));
+    gl.uniform1i(this.pDisplay.uniforms.uVelocity, this.velocity.read.attach(1));
+    gl.uniform1i(this.pDisplay.uniforms.uPressure, this.pressure.read.attach(2));
+    gl.uniform1i(this.pDisplay.uniforms.uDivergence, this.divergence.attach(3));
+    gl.uniform1i(this.pDisplay.uniforms.uMode, this.cfg.mode);
+    gl.uniform2f(this.pDisplay.uniforms.uSimGrid, this.simW, this.simH);
+    this.blit(null);
+  }
+
+  autoSplats (now) {
+    const c = this.cfg;
+    if (c.auto === "once") {
+      if (this._autoDone || !this.visible) return;
+      if (now - this.lastInteract < 900 && this.lastInteract > 0) { this._autoDone = true; return; }
+      if (now < 700) return;
+      this._autoDone = true;
+      this.autoPair();
+    } else if (c.auto === "always") {
+      if (!this.visible) return;
+      if (now - this.lastInteract < 3500) return;
+      if (now - this.lastAuto < 1200) return;
+      this.lastAuto = now;
+      const n = Math.random() < 0.5 ? 1 : 2;
+      for (let i = 0; i < n; i++) {
+        const hue = Math.random() < 0.55 ? 0.42 + Math.random() * 0.18 : 0.78 + Math.random() * 0.12;
+        const a = Math.random() * Math.PI * 2;
+        const speed = 320 + Math.random() * 480;
+        this.splat(0.15 + Math.random() * 0.7, 0.2 + Math.random() * 0.6,
+          Math.cos(a) * speed, Math.sin(a) * speed,
+          FluidSim.hsv(hue, 0.9, 1.0).map(v => v * 0.42));
+      }
+    }
+  }
+
+  autoPair () {
+    const y = 0.5, dir = Math.random() < 0.5 ? 1 : -1;
+    this.splat(0.28, y + 0.08, 520 * dir, -160, FluidSim.hsv(0.47, 0.85, 1).map(v => v * 0.32));
+    this.splat(0.72, y - 0.08, -520 * dir, 160, FluidSim.hsv(0.9, 0.75, 1).map(v => v * 0.32));
+  }
+
+  update (dt, now) {
+    if (!this.visible) return;
+    this.step(Math.min(dt, 0.033), now);
+    this.render();
+    this.autoSplats(now);
+    if (this.cfg.showFps) {
+      this.fpsAcc += dt; this.fpsN++;
+      if (this.fpsAcc > 0.5) {
+        this.fpsShown = Math.round(this.fpsN / this.fpsAcc);
+        this.fpsAcc = 0; this.fpsN = 0;
+        if (this.fpsEl) this.fpsEl.textContent = this.fpsShown + " fps";
+      }
+    }
+  }
+}
+
+function initCh6 () {
+  /* ── 演示 6-1 · 火焰：浮力自驱动 ── */
+  const fire = mountSim("canvas-fire", {
+    simRes: 96, dyeRes: 384, pressureIters: 20, curl: 26,
+    dyeDissipation: 2.2, velDissipation: 0.35,
+    mode: 6, auto: null, buoyancy: 320, wobble: 55, force: 4000,
+    emitter (sim, now) {
+      const t = now / 1000;
+      const sources = [0.36, 0.5, 0.64];
+      for (let i = 0; i < sources.length; i++) {
+        const x = sources[i] + Math.sin(t * 1.3 + i * 2.1) * 0.018;
+        sim.splat(x, 0.07, (Math.random() - 0.5) * 90, 40, [0.075, 0, 0]);
+      }
+    }
+  });
+  if (fire) {
+    const bR = $("#fire-buoy"), bV = $("#fire-buoy-val");
+    bR.addEventListener("input", () => { fire.cfg.buoyancy = +bR.value; bV.textContent = bR.value; });
+    const wR = $("#fire-wobble"), wV = $("#fire-wobble-val");
+    wR.addEventListener("input", () => { fire.cfg.wobble = +wR.value; wV.textContent = wR.value; });
+    const sw = $("#fire-on");
+    sw.addEventListener("change", (e) => {
+      fire.cfg.emitter = e.target.checked ? fire._emitterFn : null;
+      fire.cfg.buoyancy = e.target.checked ? +bR.value : 0;
+    });
+    fire._emitterFn = fire.cfg.emitter;
+  }
+
+  /* ── 演示 6-2 · 河流：持续注入 + 障碍绕流 ── */
+  const river = mountSim("canvas-river", {
+    simRes: 128, dyeRes: 512, pressureIters: 36, curl: 10,
+    dyeDissipation: 0.55, velDissipation: 0.04,
+    mode: 0, auto: null,
+    river: { ob1: [0.32, 0.5], r1: 0.075, ob2: [0.55, 0.28], r2: 0.048, enabled: true },
+    speed: 1050,
+    emitter (sim, now) {
+      const c = sim.cfg, t = now / 1000;
+      // 上游：三股持续注入（永不停的 splat）
+      for (let i = 0; i < 3; i++)
+        sim.splat(0.025, 0.22 + i * 0.28, c.speed, 0, null);
+      // 示踪染料：入口一小缕，位置缓慢摆动，看它绕过石头画出的流线
+      sim._tick = (sim._tick || 0) + 1;
+      if (sim._tick % 5 === 0)
+        sim.splat(0.05, 0.5 + Math.sin(t * 0.7) * 0.33, 0, 0, [0.07, 0.26, 0.34]);
+    }
+  });
+  if (river) {
+    const sR = $("#river-speed"), sV = $("#river-speed-val");
+    sR.addEventListener("input", () => { river.cfg.speed = +sR.value; sV.textContent = sR.value; });
+    $("#river-ob").addEventListener("change", (e) => { river.cfg.river.enabled = e.target.checked; });
+    bindSeg("river-view", (btn) => { river.cfg.mode = +btn.dataset.m; });
+  }
+}
+
+/* ───────────────────── 演示装配 ───────────────────── */
+
+function mountSim (canvasId, cfg, onReady) {
+  const canvas = $("#" + canvasId);
+  const wrap = canvas.parentElement;
+  let sim = null;
+  try {
+    sim = new FluidSim(canvas, cfg);
+  } catch (err) {
+    console.warn(canvasId, err);
+    const div = document.createElement("div");
+    div.className = "gl-fallback";
+    div.textContent = "⚠️ 当前浏览器不支持 WebGL2 浮点渲染，无法运行此演示（桌面版 Chrome / Edge / Firefox 均可）。";
+    wrap.replaceChild(div, canvas);
+    return null;
+  }
+  canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); sim.visible = false; });
+  animatables.push(sim);
+  visObserver.observe(canvas);
+  if (onReady) onReady(sim);
+  return sim;
+}
+
+const visObserver = new IntersectionObserver((entries) => {
+  for (const en of entries) {
+    const t = animatables.find(a => a.canvas === en.target);
+    if (t) t.visible = en.isIntersecting;
+  }
+}, { threshold: 0.06 });
+
+function bindSeg (segId, cb) {
+  const seg = $("#" + segId);
+  seg.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    seg.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    cb(btn);
+  });
+}
+
+function initHero () {
+  mountSim("canvas-hero", {
+    simRes: 128, dyeRes: 640, pressureIters: 24, curl: 30,
+    dyeDissipation: 0.5, velDissipation: 0.3, auto: "always", force: 5200
+  }, (sim) => {
+    // 开场立即三笔，页面一加载就有画面
+    sim.splat(0.28, 0.58, 820, -180, FluidSim.hsv(0.46, 0.9, 1).map(v => v * 0.45));
+    sim.splat(0.66, 0.42, -740, 260, FluidSim.hsv(0.87, 0.8, 1).map(v => v * 0.45));
+    sim.splat(0.5, 0.5, 0, 500, FluidSim.hsv(0.55, 0.85, 1).map(v => v * 0.4));
+  });
+}
+
+function initCh2 () {
+  const sim = mountSim("canvas-ch2", {
+    simRes: 96, dyeRes: 384, pressureIters: 16, curl: 0,
+    dyeDissipation: 0.0, velDissipation: 0.22
+  });
+  if (!sim) return;
+
+  const blockBtn = $("#ch2-block");
+  const vortex = (cx, cy, r, dir, mag) => {
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      sim.splat(x, y, -Math.sin(a) * dir * mag, Math.cos(a) * dir * mag, null);
+    }
+  };
+  const dropBlock = () => {
+    sim.clearDye();
+    vortex(0.5, 0.5, 0.24, 1, 150);
+    const n = 9, size = 0.15, col = [0.10, 0.62, 0.80];
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const x = 0.5 + (i / (n - 1) - 0.5) * size;
+      const y = 0.55 + (j / (n - 1) - 0.5) * size;
+      sim.splat(x, y, 0, 0, col.map(v => v * 0.5));
+    }
+  };
+  blockBtn.addEventListener("click", () => { sim._autoDone = true; dropBlock(); });
+  $("#ch2-reset").addEventListener("click", () => sim.clearAll());
+
+  $("#ch2-forward").addEventListener("change", (e) => {
+    sim.cfg.forwardAdvection = e.target.checked;
+  });
+  $("#ch2-grid").addEventListener("change", (e) => {
+    sim.cfg.mode = e.target.checked ? 5 : 0;
+  });
+
+  // 首次进场自动投一个方块
+  setTimeout(() => { if (!sim._autoDone && sim.visible !== false) { sim._autoDone = true; dropBlock(); } }, 1200);
+}
+
+function initCh3 () {
+  const sim = mountSim("canvas-ch3", {
+    simRes: 96, dyeRes: 384, pressureIters: 20, curl: 4,
+    dyeDissipation: 0.25, velDissipation: 0.3
+  });
+  if (!sim) return;
+  const range = $("#ch3-curl"), val = $("#ch3-curl-val");
+  range.addEventListener("input", () => {
+    sim.cfg.curl = +range.value;
+    val.textContent = range.value;
+  });
+}
+
+function initCh4 () {
+  const sim = mountSim("canvas-ch4", {
+    simRes: 96, dyeRes: 384, pressureIters: 24, curl: 15,
+    dyeDissipation: 0.0, velDissipation: 0.3
+  });
+  if (!sim) return;
+  $("#ch4-proj").addEventListener("change", (e) => {
+    sim.cfg.useProjection = e.target.checked;
+  });
+  bindSeg("ch4-view", (btn) => { sim.cfg.mode = +btn.dataset.m; });
+  const range = $("#ch4-iters"), val = $("#ch4-iters-val");
+  range.addEventListener("input", () => {
+    sim.cfg.pressureIters = +range.value;
+    val.textContent = range.value;
+  });
+}
+
+function initCh5 () {
+  const sim = mountSim("canvas-ch5", {
+    simRes: 128, dyeRes: 512, pressureIters: 24, curl: 28,
+    dyeDissipation: 0.0, velDissipation: 0.2, showFps: true
+  });
+  if (!sim) return;
+  sim.fpsEl = $("#ch5-fps");
+  $("#ch5-proj").addEventListener("change", (e) => { sim.cfg.useProjection = e.target.checked; });
+  $("#ch5-curl-on").addEventListener("change", (e) => { sim.cfg.curl = e.target.checked ? 28 : 0; });
+  bindSeg("ch5-view", (btn) => { sim.cfg.mode = +btn.dataset.m; });
+
+  const presets = {
+    smoke: { dyeDissipation: 1.5, velDissipation: 0.4, curl: 18, pressureIters: 20, mode: 0 },
+    ink:   { dyeDissipation: 0.0, velDissipation: 0.15, curl: 30, pressureIters: 28, mode: 0 },
+    water: { dyeDissipation: 0.05, velDissipation: 0.1, curl: 10, pressureIters: 40, mode: 4 }
+  };
+  bindSeg("ch5-preset", (btn) => {
+    const p = presets[btn.dataset.p];
+    Object.assign(sim.cfg, p);
+    if (btn.dataset.p === "water") {
+      // 水面模式需要一片初始水体
+      sim.clearDye();
+      for (let i = 0; i < 42; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 60 + Math.random() * 200;
+        sim.splat(0.1 + Math.random() * 0.8, 0.12 + Math.random() * 0.76,
+          Math.cos(a) * sp, Math.sin(a) * sp, [0.5, 0.78, 0.88]);
+      }
+    }
+  });
+  $("#ch5-reset").addEventListener("click", () => sim.clearAll());
+}
+
+/* ───────────────────── 第 1 章 · Canvas2D 速度场 ───────────────────── */
+
+function initCh1 () {
+  const canvas = $("#canvas-ch1");
+  const ctx = canvas.getContext("2d");
+  let view = "particles";
+  let W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  const resize = () => {
+    W = Math.max(2, Math.round(canvas.clientWidth * dpr));
+    H = Math.max(2, Math.round(canvas.clientHeight * dpr));
+    canvas.width = W; canvas.height = H;
+    ctx.fillStyle = "#060a10";
+    ctx.fillRect(0, 0, W, H);
+  };
+  resize();
+  window.addEventListener("resize", resize);
+
+  // 鼠标扰动（splat 思想，与 GPU 版同源）
+  const splats = [];
+  let down = false, px = 0, py = 0;
+  const pos = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return [((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1)];
+  };
+  canvas.addEventListener("pointerdown", (e) => { down = true; [px, py] = pos(e); });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!down) return;
+    const [x, y] = pos(e);
+    splats.push({ x, y, vx: (x - px) * 26, vy: (y - py) * 26, r: 0.34, age: 0 });
+    if (splats.length > 26) splats.shift();
+    px = x; py = y;
+  });
+  const up = () => { down = false; };
+  canvas.addEventListener("pointerup", up);
+  canvas.addEventListener("pointercancel", up);
+
+  // 两个游走旋涡 + 缓慢风场
+  const vortices = [
+    { ax: -0.45, ay: 0.30, fx: 0.13, fy: 0.17, s: 1.0, r: 0.62 },
+    { ax: 0.48, ay: -0.36, fx: 0.11, fy: 0.15, s: -1.25, r: 0.56 }
+  ];
+  function field (x, y, t) {
+    let vx = 0, vy = 0;
+    for (const v of vortices) {
+      const cx = v.ax * Math.cos(t * v.fx), cy = v.ay * Math.sin(t * v.fy);
+      const dx = x - cx, dy = y - cy;
+      const g = Math.exp(-(dx * dx + dy * dy) / (v.r * v.r)) * v.s * 0.62;
+      vx += -dy * g; vy += dx * g;
+    }
+    vx += 0.10 * Math.sin(y * 3.0 + t * 0.42) + 0.045 * Math.sin(y * 6.5 - t * 0.9);
+    vy += 0.10 * Math.cos(x * 2.6 - t * 0.31) + 0.045 * Math.cos(x * 5.8 + t * 0.7);
+    for (const s of splats) {
+      const dx = x - s.x, dy = y - s.y;
+      const g = Math.exp(-(dx * dx + dy * dy) / (s.r * s.r)) * Math.exp(-s.age / 0.55);
+      vx += s.vx * g; vy += s.vy * g;
+    }
+    return [vx, vy];
+  }
+
+  // 粒子（记者）
+  const N = 1600;
+  const particles = [];
+  const spawn = (p) => {
+    p.x = Math.random() * 2 - 1; p.y = Math.random() * 2 - 1;
+    p.life = 2.5 + Math.random() * 5;
+  };
+  for (let i = 0; i < N; i++) { const p = {}; spawn(p); p.life *= Math.random(); particles.push(p); }
+
+  const state = { visible: false, canvas, update (dt, now) {
+    if (!state.visible) return;
+    const t = now / 1000;
+    for (const s of splats) s.age += dt;
+
+    if (view === "particles") {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "rgba(6,10,16,0.075)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "lighter";
+      ctx.lineWidth = Math.max(1, dpr * 1.4);
+      for (const p of particles) {
+        const [vx, vy] = field(p.x, p.y, t);
+        const nx = p.x + vx * dt * 0.62, ny = p.y + vy * dt * 0.62;
+        const mag = Math.min(1, Math.hypot(vx, vy) * 1.35);
+        const hue = 185 + mag * 130;
+        ctx.strokeStyle = `hsla(${hue}, 85%, ${48 + mag * 22}%, ${0.24 + mag * 0.55})`;
+        ctx.beginPath();
+        ctx.moveTo((p.x * 0.5 + 0.5) * W, (0.5 - p.y * 0.5) * H);
+        ctx.lineTo((nx * 0.5 + 0.5) * W, (0.5 - ny * 0.5) * H);
+        ctx.stroke();
+        p.x = nx; p.y = ny;
+        p.life -= dt;
+        if (p.life <= 0 || Math.abs(p.x) > 1.05 || Math.abs(p.y) > 1.05) spawn(p);
+      }
+    } else {
+      // 箭头视图：直接把"场"画出来
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "#070c13";
+      ctx.fillRect(0, 0, W, H);
+      const step = 34 * dpr;
+      for (let gx = step / 2; gx < W; gx += step) {
+        for (let gy = step / 2; gy < H; gy += step) {
+          const x = (gx / W) * 2 - 1, y = -((gy / H) * 2 - 1);
+          const [vx, vy] = field(x, y, t);
+          const mag = Math.min(1, Math.hypot(vx, vy) * 1.3);
+          const len = mag * step * 0.85 + 3;
+          const ux = vx / (Math.hypot(vx, vy) + 1e-6), uy = vy / (Math.hypot(vx, vy) + 1e-6);
+          const ex = gx + ux * len, ey = gy - uy * len;
+          const hue = 185 + mag * 130;
+          ctx.strokeStyle = `hsla(${hue}, 80%, ${38 + mag * 30}%, ${0.35 + mag * 0.6})`;
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.lineWidth = Math.max(1, dpr * 1.1);
+          ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(ex, ey); ctx.stroke();
+          const hs = 2.6 * dpr + mag * 2.4 * dpr;
+          ctx.beginPath();
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(ex - ux * hs - uy * hs * 0.55, ey + uy * hs - ux * hs * 0.55);
+          ctx.lineTo(ex - ux * hs + uy * hs * 0.55, ey + uy * hs + ux * hs * 0.55);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+    }
+  }};
+  animatables.push(state);
+  visObserver.observe(canvas);
+
+  bindSeg("ch1-view", (btn) => {
+    view = btn.dataset.v;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "#060a10";
+    ctx.fillRect(0, 0, W, H);
+  });
+}
+
+/* ───────────────────── 导航 / 主循环 / 入场动画 ───────────────────── */
+
+function initNavSpy () {
+  const links = $$("#nav a");
+  const map = new Map();
+  links.forEach(a => map.set(a.getAttribute("href").slice(1), a));
+  const spy = new IntersectionObserver((entries) => {
+    for (const en of entries) {
+      if (en.isIntersecting) {
+        links.forEach(a => a.classList.remove("active"));
+        const a = map.get(en.target.id);
+        if (a) a.classList.add("active");
+      }
+    }
+  }, { rootMargin: "-30% 0px -60% 0px" });
+  $$("section.chapter").forEach(s => spy.observe(s));
+}
+
+function initReveal () {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); obs.unobserve(en.target); } });
+  }, { threshold: 0.12 });
+  $$(".reveal").forEach(el => obs.observe(el));
+}
+
+let lastTime = performance.now();
+function loop (now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+  for (const a of animatables) {
+    try { a.update(dt, now); } catch (err) { console.error(err); a.visible = false; }
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ───────────────────── 阅读进度条 / 回到顶部 ───────────────────── */
+
+function initChrome () {
+  const bar = $("#progress");
+  const top = $("#totop");
+  let ticking = false;
+  const update = () => {
+    const h = document.documentElement;
+    const max = Math.max(1, h.scrollHeight - h.clientHeight);
+    bar.style.transform = "scaleX(" + Math.min(1, h.scrollTop / max) + ")";
+    top.classList.toggle("show", h.scrollTop > 640);
+    ticking = false;
+  };
+  document.addEventListener("scroll", () => {
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+  window.addEventListener("resize", update);
+  update();
+  top.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+}
+
+/* ───────────────────── 代码一键复制 ───────────────────── */
+
+function initCopyButtons () {
+  if (!navigator.clipboard && !document.execCommand) return;
+  $$("pre.code").forEach(pre => {
+    const txt = pre.innerText;
+    const btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.type = "button";
+    btn.textContent = "复制";
+    btn.addEventListener("click", async () => {
+      let ok = false;
+      try { await navigator.clipboard.writeText(txt); ok = true; } catch (_) {}
+      if (!ok) {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = txt;
+          ta.style.cssText = "position:fixed;opacity:0";
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand("copy");
+          ta.remove();
+        } catch (_) {}
+      }
+      btn.textContent = ok ? "已复制 ✓" : "复制失败";
+      setTimeout(() => { btn.textContent = "复制"; }, 1400);
+    });
+    pre.appendChild(btn);
+  });
+}
+
+initNavSpy();
+initReveal();
+initChrome();
+initCopyButtons();
+initCh1();
+initHero();
+initCh2();
+initCh3();
+initCh4();
+initCh5();
+initCh6();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
