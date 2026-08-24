@@ -743,8 +743,14 @@ result = <span class="fn">texture</span>(uTarget, vUv) + add;          <span cla
           <div class="demo-body"><canvas id="canvas-ch3" class="sim" aria-label="涡度演示"></canvas></div>
           <div class="demo-ctrl">
             <div class="ctrl"><span>涡度强度</span><input type="range" id="ch3-curl" min="0" max="50" step="1" value="4"><span class="val" id="ch3-curl-val">4</span></div>
+            <div class="ctrl"><span>慢放</span><input type="range" id="ch3-speed" min="5" max="100" step="5" value="100"><span class="val" id="ch3-speed-val">1.00×</span></div>
           </div>
-          <div class="demo-hint">画圈拖动制造旋涡，然后调滑块对比旋涡的存活时间与翻腾力度。</div>
+          <div class="demo-ctrl">
+            <button class="btn" id="ch3-pause" type="button">暂停</button>
+            <button class="btn" id="ch3-step" type="button">单步 +1 帧</button>
+            <button class="btn" id="ch3-reset" type="button">清空</button>
+          </div>
+          <div class="demo-hint">画圈拖动制造旋涡，调滑块对比存活时间。拖不动看不清时：拉慢放 + 暂停 + 单步。</div>
         </div>
       </aside>
     </div>
@@ -2440,7 +2446,7 @@ class FluidSim {
 
   update (dt, now) {
     if (!this.visible) return;
-    this.step(Math.min(dt, 0.033), now);
+    if (!this.paused) this.step(Math.min(dt, 0.033), now);
     this.render();
     this.autoSplats(now);
     if (this.cfg.showFps) {
@@ -2611,6 +2617,24 @@ function initCh3 () {
     sim.cfg.curl = +range.value;
     val.textContent = range.value;
   });
+  // 慢放 / 暂停 / 单步 —— 观察涡的生灭用
+  const sp = $("#ch3-speed"), spV = $("#ch3-speed-val");
+  sp.addEventListener("input", () => {
+    sim.cfg.dtScale = +sp.value / 100;
+    spV.textContent = (+sp.value / 100).toFixed(2) + "×";
+  });
+  const pauseBtn = $("#ch3-pause");
+  pauseBtn.addEventListener("click", () => {
+    sim.paused = !sim.paused;
+    pauseBtn.textContent = sim.paused ? "继续" : "暂停";
+  });
+  $("#ch3-step").addEventListener("click", () => {
+    if (!sim.paused) { sim.paused = true; pauseBtn.textContent = "继续"; }
+    sim._manualStep = true;
+    sim.step(1 / 60, performance.now());
+    sim.render();
+  });
+  $("#ch3-reset").addEventListener("click", () => sim.clearAll());
 }
 
 function initCh4 () {
