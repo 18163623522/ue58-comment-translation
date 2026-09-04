@@ -26,6 +26,34 @@
   padding: 4px 16px 16px 20px;
 }
 
+/* —— 窗口拖动区：自绘 titlebar 已隐藏，由顶部 header 行接管拖动。
+   左侧空白为握把区（六点提示），交互控件一律 no-drag 保证可点。 —— */
+.quick-sticky-window .view-header {
+  -webkit-app-region: drag;
+  position: relative;
+  cursor: grab;
+}
+.quick-sticky-window .view-header:active {
+  cursor: grabbing;
+}
+.quick-sticky-window .view-header button,
+.quick-sticky-window .view-header input,
+.quick-sticky-window .view-header .clickable-icon {
+  -webkit-app-region: no-drag;
+}
+.quick-sticky-window .view-header::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 15px;
+  background: radial-gradient(circle, var(--text-faint) 1px, transparent 1.3px);
+  background-size: 5px 6px;
+  opacity: 0.9;
+}
+
 /* popout 通知类悬浮物不干扰（隐藏在便签窗口内的 notice/progress） */
 .quick-sticky-window .notice-container,
 .quick-sticky-window .notice,
