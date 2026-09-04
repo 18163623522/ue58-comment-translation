@@ -1,0 +1,9 @@
+{
+  "id": "quick-sticky-notes",
+  "name": "Quick Sticky Notes",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Windows 便签式桌面悬浮快捷笔记：独立窗口、全局热键、置顶、颜色透明度、多便签恢复。",
+  "author": "18163623522",
+  "isDesktopOnly": true
+}

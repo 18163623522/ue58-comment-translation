@@ -1,0 +1,181 @@
+/* ===== Quick Sticky Notes ===== */
+
+/* —— popout 内隐藏 Obsidian chrome（ssn selector 清单，按需增删）—— */
+.quick-sticky-window .workspace-tab-header-container,
+.quick-sticky-window .workspace-tab-header,
+.quick-sticky-window .mod-workspace-tab-header,
+.quick-sticky-window .view-header-nav-buttons,
+.quick-sticky-window .view-header-breadcrumb,
+.quick-sticky-window .view-header-left,
+.quick-sticky-window .view-header-status-container,
+.quick-sticky-window .sidebar-toggle-button,
+.quick-sticky-window .side-dock-actions,
+.quick-sticky-window .status-bar,
+.quick-sticky-window .titlebar,
+.quick-sticky-window .metadata-container,
+.quick-sticky-window .metadata-properties,
+.quick-sticky-window .metadata-add-button,
+.quick-sticky-window .frontmatter-section,
+.quick-sticky-window .mod-header,
+.quick-sticky-window .inline-title {
+  display: none !important;
+}
+
+/* 便签窗口内容留白 */
+.quick-sticky-window .view-content {
+  padding: 4px 16px 16px 20px;
+}
+
+/* popout 通知类悬浮物不干扰（隐藏在便签窗口内的 notice/progress） */
+.quick-sticky-window .notice-container,
+.quick-sticky-window .notice,
+.quick-sticky-window .progress-bar {
+  display: none !important;
+}
+
+/* —— view-actions 里的便签控件 —— */
+.quick-sticky-color-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+}
+.quick-sticky-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+  padding: 0;
+}
+.quick-sticky-swatch:hover {
+  transform: scale(1.15);
+}
+.quick-sticky-color-custom {
+  width: 18px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* 弹层锚定：操作行设为定位原点，弹层落在其正下方（否则相对文档根定位，
+   会漂到页首压住 editing-toolbar，输入框被盖住）。z-index 压过编辑器内悬浮工具栏。 */
+.quick-sticky-window .view-actions {
+  position: relative;
+}
+.quick-sticky-opacity-popover,
+.quick-sticky-location-popover {
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 999;
+}
+
+.quick-sticky-opacity-popover {
+  display: none;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: var(--shadow-s);
+}
+.quick-sticky-opacity-popover.is-open {
+  display: block;
+}
+.quick-sticky-opacity-slider {
+  width: 160px;
+}
+
+/* —— 保存位置面板 —— */
+.quick-sticky-location-popover {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: var(--shadow-s);
+}
+.quick-sticky-location-popover.is-open {
+  visibility: visible;
+  pointer-events: auto;
+}
+.quick-sticky-location-input {
+  width: 200px;
+}
+.quick-sticky-location-move,
+.quick-sticky-location-default {
+  width: 100%;
+}
+
+/* —— 列表面板 —— */
+.quick-sticky-list {
+  padding: 8px;
+}
+.quick-sticky-list-toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.quick-sticky-list-search {
+  flex: 1;
+}
+.quick-sticky-list-new {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quick-sticky-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.quick-sticky-list-item:hover {
+  background: var(--background-modifier-hover);
+}
+.quick-sticky-list-item.is-open {
+  background: var(--background-modifier-active-hover);
+}
+.quick-sticky-list-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  border: 1px solid var(--background-modifier-border);
+}
+.quick-sticky-list-item-body {
+  flex: 1;
+  min-width: 0;
+}
+.quick-sticky-list-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quick-sticky-list-preview {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quick-sticky-list-open-mark {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-accent);
+  flex: none;
+}
+.quick-sticky-list-empty {
+  color: var(--text-muted);
+  padding: 16px 0;
+  text-align: center;
+}

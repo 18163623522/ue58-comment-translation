@@ -1,0 +1,23 @@
+{
+  "name": "obsidian-quick-sticky",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Obsidian 桌面便签插件：独立窗口悬浮快捷笔记。",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "vitest run",
+    "check": "tsc -noEmit -skipLibCheck"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@electron/remote": "^2.1.2",
+    "@types/node": "^20.14.10",
+    "esbuild": "^0.23.0",
+    "obsidian": "latest",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.9"
+  }
+}
