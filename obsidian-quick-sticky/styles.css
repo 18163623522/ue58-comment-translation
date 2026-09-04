@@ -60,59 +60,6 @@
   cursor: pointer;
 }
 
-/* 弹层锚定：操作行设为定位原点，弹层落在其正下方（否则相对文档根定位，
-   会漂到页首压住 editing-toolbar，输入框被盖住）。z-index 压过编辑器内悬浮工具栏。 */
-.quick-sticky-window .view-actions {
-  position: relative;
-}
-.quick-sticky-opacity-popover,
-.quick-sticky-location-popover {
-  right: 0;
-  top: calc(100% + 6px);
-  z-index: 999;
-}
-
-.quick-sticky-opacity-popover {
-  display: none;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  padding: 10px;
-  box-shadow: var(--shadow-s);
-}
-.quick-sticky-opacity-popover.is-open {
-  display: block;
-}
-.quick-sticky-opacity-slider {
-  width: 160px;
-}
-
-/* —— 保存位置面板 —— */
-.quick-sticky-location-popover {
-  visibility: hidden;
-  pointer-events: none;
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  padding: 10px;
-  box-shadow: var(--shadow-s);
-}
-.quick-sticky-location-popover.is-open {
-  visibility: visible;
-  pointer-events: auto;
-}
-.quick-sticky-location-input {
-  width: 200px;
-}
-.quick-sticky-location-move,
-.quick-sticky-location-default {
-  width: 100%;
-}
-
 /* —— 列表面板 —— */
 .quick-sticky-list {
   padding: 8px;

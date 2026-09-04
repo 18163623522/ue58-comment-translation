@@ -32,7 +32,7 @@ export class AbstractInputSuggest<T> {
 export function setIcon(_el: HTMLElement, _icon: string): void {}
 export function setTooltip(_el: HTMLElement, _tooltip: string): void {}
 
-// —— settings.ts UI 部分需要的基类 ——
+// —— settings.ts / StickyWindow.ts UI 部分需要的基类 ——
 
 export class PluginSettingTab {
   constructor(_app: unknown, _plugin: unknown) {}
@@ -49,4 +49,16 @@ export class Setting {
   addToggle(_cb: (t: unknown) => unknown): this { return this; }
   addColorPicker(_cb: (t: unknown) => unknown): this { return this; }
   addButton(_cb: (t: unknown) => unknown): this { return this; }
+}
+
+export class Menu {
+  addItem(_cb: (item: never) => unknown): this { return this; }
+  addSeparator(): this { return this; }
+  showAtMouseEvent(_e: MouseEvent): this { return this; }
+}
+
+export class FuzzySuggestModal<T> {
+  constructor(_app: unknown) {}
+  open(): void {}
+  setPlaceholder(_p: string): this { return this; }
 }

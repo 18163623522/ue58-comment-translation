@@ -137,26 +137,20 @@ export class WindowManager {
     return win;
   }
 
-  // 便签窗口「保存位置」面板的动作钩子。
+  // 便签窗口「保存位置」的动作钩子（Menu + 模糊 Modal 触发，窗口实例直接传入）。
   private saveLocationHooks(): SaveLocationPanelHooks {
     return {
-      // 移动这张便签：面板属于触发它的那个窗口 —— 通过当前聚焦窗口定位。
-      onMove: async (folder) => {
-        const active = this.activeStickyWindow();
-        if (!active) {
-          new Notice("请先点击要移动的便签窗口。");
-          return;
-        }
+      onMove: async (win, folder) => {
         try {
-          const oldPath = active.file.path;
+          const oldPath = win.file.path;
           const newPath = await this.noteFiles.moveNote(
-            active.file as unknown as { path: string; basename: string },
+            win.file as unknown as { path: string; basename: string },
             folder,
           );
           if (newPath === oldPath) return; // 已在目标文件夹
           // renameFile 后 vault "rename" 事件会进 onFileRenamed 同步注册表，
-          // 但窗口标题 key 需要我们刷新（dataset.quickStickyPath 也在 refreshChrome 内更新）。
-          active.refreshAfterRename(newPath);
+          // 窗口标题 key 与 dataset 路径由 refreshAfterRename 刷新。
+          win.refreshAfterRename(newPath);
           new Notice(`已移动到 ${newPath}`);
         } catch (e) {
           new Notice(`移动失败：${String(e)}`);
@@ -167,16 +161,6 @@ export class WindowManager {
         new Notice(`新便签默认保存位置：${folder || "vault 根目录"}`);
       },
     };
-  }
-
-  // 聚焦/最近操作的便签窗口：遍历注册表，取 Electron 焦点态；全都没有时回退最后一个。
-  private activeStickyWindow(): StickyWindow | null {
-    const wins = [...this.byPath.values()];
-    if (!wins.length) return null;
-    for (const w of wins) {
-      if (w.isFocused) return w;
-    }
-    return wins[wins.length - 1];
   }
 
   /** 热键/命令路径：新建一张便签并聚焦。 */

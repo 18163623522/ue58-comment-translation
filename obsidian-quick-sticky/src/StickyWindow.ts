@@ -1,35 +1,10 @@
-import { AbstractInputSuggest, MarkdownView, Notice, setIcon, setTooltip } from "obsidian";
-import { TFolder } from "obsidian";
+import { MarkdownView, Menu, Notice, setIcon, setTooltip } from "obsidian";
 import type { App, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import type { ElectronBridgeAPI, NativeWindow } from "./ElectronBridge";
 import { STICKY_COLOR_KEY, STICKY_OPACITY_KEY, windowTitleKey } from "./NoteFileService";
+import { FolderSuggestModal, folderPathOf } from "./FolderSuggestModal";
 import type { StickySettings } from "./settings";
 import type { NoteBounds } from "./settings";
-
-// 弹出面板里用的文件夹联想（与设置页同模式，挂在指定 input 上）。
-class StickyFolderSuggest extends AbstractInputSuggest<TFolder> {
-  constructor(app: App, private input: HTMLInputElement) {
-    super(app, input);
-  }
-  getSuggestions(inputStr: string): TFolder[] {
-    const lower = inputStr.toLowerCase();
-    return this.app.vault
-      .getAllLoadedFiles()
-      .filter(
-        (f): f is TFolder =>
-          f instanceof TFolder &&
-          (f.path.toLowerCase().includes(lower) || f.name.toLowerCase().includes(lower)),
-      );
-  }
-  renderSuggestion(folder: TFolder, el: HTMLElement): void {
-    el.setText(folder.path);
-  }
-  selectSuggestion(folder: TFolder): void {
-    this.input.value = folder.path;
-    this.input.trigger("input");
-    this.close();
-  }
-}
 
 export const PRESET_COLORS = [
   "#fff3a3", // 黄
@@ -73,15 +48,16 @@ interface MetadataLike {
   };
 }
 
-// 保存位置按钮点击后注入的面板：文件夹联想 + 移动 / 设为默认。
-// 注意：AbstractInputSuggest 的下拉挂在 popout 的 body 上，面板不能 display:none
-// 折叠（联想层会定位失败），用 visibility + pointer-events 轮换。
+// 保存位置动作钩子（原生 Menu + 模糊搜索 Modal 触发，无窗口内浮层）。
 export interface SaveLocationPanelHooks {
-  /** 用户点「移动这张便签」。folder 为目标文件夹。 */
-  onMove(folder: string): Promise<void>;
-  /** 用户点「设为新便签默认位置」。 */
+  /** 「移动这张便签」：win 是触发动作的便签窗口。folder 为目标文件夹（空串 = vault 根）。 */
+  onMove(win: StickyWindow, folder: string): Promise<void>;
+  /** 「设为新便签默认位置」。 */
   onSetDefault(folder: string): Promise<void>;
 }
+
+/** 透明度菜单档位（菜单选档，替代窗口内滑杆——滑杆浮层会被编辑器悬浮工具栏遮挡）。 */
+export const OPACITY_LEVELS = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3];
 
 export class StickyWindow {
   readonly file: TFile;
@@ -184,10 +160,6 @@ export class StickyWindow {
     return this.nativeWindow ? this.nativeWindow.getBounds() : null;
   }
 
-  get isFocused(): boolean {
-    return this.nativeWindow?.isFocused() ?? false;
-  }
-
   /** 文件被移动（vault rename）后刷新窗口身份：标题 key 与 dataset 路径。 */
   refreshAfterRename(newPath: string): void {
     (this.file as { path: string }).path = newPath;
@@ -275,65 +247,50 @@ export class StickyWindow {
       this.ctx.plugin.registerDomEvent(custom, "input", () => void this.applyColor(custom.value));
     }
 
-    // 保存位置：面板含文件夹联想 + 移动这张便签 / 设为默认
+    // 保存位置：原生 Menu 两项 → 命令面板式模糊搜索 Modal（全局层级，无遮挡）
     if (this.saveLocationHooks) {
       const locBtn = actions.createEl("button", { cls: "clickable-icon quick-sticky-action" });
       setIcon(locBtn, "folder-input");
       setTooltip(locBtn, "保存位置");
-      const panel = actions.createEl("div", { cls: "quick-sticky-location-popover" });
-      const input = panel.createEl("input", {
-        cls: "quick-sticky-location-input",
-        attr: { type: "text", placeholder: "目标文件夹…" },
+      this.ctx.plugin.registerDomEvent(locBtn, "click", (e: MouseEvent) => {
+        const menu = new Menu();
+        menu.addItem((item) => item
+          .setTitle("移动这张便签到…")
+          .setIcon("folder-input")
+          .onClick(() => {
+            new FolderSuggestModal(this.ctx.plugin.app as App, (folder) =>
+              this.saveLocationHooks!.onMove(this, folderPathOf(folder))).open();
+          }));
+        menu.addItem((item) => item
+          .setTitle("设为新便签默认位置…")
+          .setIcon("bookmark")
+          .onClick(() => {
+            new FolderSuggestModal(this.ctx.plugin.app as App, (folder) =>
+              this.saveLocationHooks!.onSetDefault(folderPathOf(folder))).open();
+          }));
+        menu.showAtMouseEvent(e);
       });
-      if (input instanceof HTMLInputElement) {
-        new StickyFolderSuggest(this.ctx.plugin.app as App, input);
-        const moveBtn = panel.createEl("button", {
-          cls: "quick-sticky-location-move",
-          text: "移动这张便签",
-        });
-        const defaultBtn = panel.createEl("button", {
-          cls: "quick-sticky-location-default",
-          text: "设为新便签默认",
-        });
-        this.ctx.plugin.registerDomEvent(locBtn, "click", () => {
-          panel.classList.toggle("is-open");
-          if (panel.classList.contains("is-open")) input.focus();
-        });
-        this.ctx.plugin.registerDomEvent(moveBtn, "click", async () => {
-          const folder = input.value.trim();
-          if (!folder) return;
-          panel.classList.remove("is-open");
-          await this.saveLocationHooks?.onMove(folder);
-        });
-        this.ctx.plugin.registerDomEvent(defaultBtn, "click", async () => {
-          const folder = input.value.trim();
-          panel.classList.remove("is-open");
-          await this.saveLocationHooks?.onSetDefault(folder);
-        });
-        this.disposers.push(() => panel.remove());
-      }
     }
 
-    // 透明度滑杆
+    // 透明度：原生菜单选档（当前档打勾）
     const opacityBtn = actions.createEl("button", { cls: "clickable-icon quick-sticky-action" });
     setIcon(opacityBtn, "eye");
     setTooltip(opacityBtn, "透明度");
-    const sliderWrap = actions.createEl("div", { cls: "quick-sticky-opacity-popover" });
-    const slider = sliderWrap.createEl("input", {
-      cls: "quick-sticky-opacity-slider",
-      attr: { type: "range", min: "0.3", max: "1", step: "0.05" },
+    this.ctx.plugin.registerDomEvent(opacityBtn, "click", (e: MouseEvent) => {
+      const current = this.lastOpacity ?? this.readOpacity() ?? this.ctx.settings.defaultOpacity;
+      const menu = new Menu();
+      for (const v of OPACITY_LEVELS) {
+        menu.addItem((item) => item
+          .setTitle(`透明度 ${Math.round(v * 100)}%`)
+          .setChecked(Math.abs(current - v) < 0.026)
+          .onClick(() => {
+            this.lastOpacity = v;
+            void this.applyAppearance(undefined, v);
+            void this.persistOpacity(v);
+          }));
+      }
+      menu.showAtMouseEvent(e);
     });
-    if (slider instanceof HTMLInputElement) {
-      slider.value = String(this.readOpacity() ?? this.ctx.settings.defaultOpacity);
-      this.ctx.plugin.registerDomEvent(slider, "input", () => {
-        const v = Number(slider.value);
-        this.lastOpacity = v;
-        void this.applyAppearance(undefined, v);
-      });
-      this.ctx.plugin.registerDomEvent(opacityBtn, "click", () => {
-        sliderWrap.classList.toggle("is-open");
-      });
-    }
 
     // 编辑/阅读切换
     const mode = view.addAction("pencil", "切换编辑/阅读", () => {
@@ -344,7 +301,7 @@ export class StickyWindow {
 
     // 关闭（文件保留）
     view.addAction("x", "关闭便签", () => this.close());
-    this.disposers.push(() => { colorWrap.remove(); sliderWrap.remove(); mode.remove(); });
+    this.disposers.push(() => { colorWrap.remove(); mode.remove(); });
   }
 
   private async applyColor(color: string): Promise<void> {
@@ -352,6 +309,12 @@ export class StickyWindow {
     const opacity = this.lastOpacity ?? this.readOpacity() ?? this.ctx.settings.defaultOpacity;
     await this.meta().fileManager.processFrontMatter(this.file, (fm) => {
       fm[STICKY_COLOR_KEY] = color;
+      fm[STICKY_OPACITY_KEY] = opacity;
+    });
+  }
+
+  private async persistOpacity(opacity: number): Promise<void> {
+    await this.meta().fileManager.processFrontMatter(this.file, (fm) => {
       fm[STICKY_OPACITY_KEY] = opacity;
     });
   }
